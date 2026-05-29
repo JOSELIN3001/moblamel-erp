@@ -1,4 +1,4 @@
-// MoblaMel ERP v46 - Sidebar manual, caja por vendedor, cumpleaños, frases motivadoras
+// MoblaMel ERP v47 - POS fullscreen, kardex busqueda texto, caja vendedor privada
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import * as XLSX_LIB from "xlsx";
 if (typeof window !== "undefined") { (window as any).XLSX = XLSX_LIB; }
@@ -1082,7 +1082,7 @@ export default function MaderERP() {
       <div style={{ display:"flex", flex:1, overflow:"hidden", height:"calc(100vh - 52px)" }}>
 
         {/* SIDEBAR */}
-        <div style={{ width: sidebarOpen ? 200 : 52, background:C.white, borderRight:`1px solid ${C.border}`, padding: sidebarOpen ? "12px 8px" : "12px 6px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative" }}>
+        <div style={{ width: sidebarOpen ? 200 : (modActual === "pos" ? 0 : 52), background:C.white, borderRight: sidebarOpen || modActual !== "pos" ? `1px solid ${C.border}` : "none", padding: sidebarOpen ? "12px 8px" : modActual === "pos" ? "0" : "12px 6px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative", visibility: !sidebarOpen && modActual === "pos" ? "hidden" : "visible" }}>
           {/* Toggle collapse button */}
           <button onClick={() => setSidebarOpen(o => !o)}
             style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"100%", padding:"6px 4px", marginBottom:10, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", color:C.t3, fontSize:14, flexShrink:0 }}
@@ -1112,6 +1112,15 @@ export default function MaderERP() {
             </div>
           )}
         </div>
+
+        {/* BOTÓN FLOTANTE para mostrar sidebar cuando está oculta en POS */}
+        {!sidebarOpen && modActual === "pos" && (
+          <button onClick={() => setSidebarOpen(true)}
+            style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)", zIndex:100, background:C.white, border:`1px solid ${C.border}`, borderRadius:"0 8px 8px 0", padding:"12px 6px", cursor:"pointer", boxShadow:"2px 0 8px rgba(0,0,0,0.1)", color:C.t3, fontSize:14 }}
+            title="Mostrar menú">
+            ▶
+          </button>
+        )}
 
         {/* CONTENIDO */}
         <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", padding:22, background:C.bg, minHeight:0 }}>
@@ -1855,9 +1864,9 @@ export default function MaderERP() {
                   ))
                 }
               </Card>
-              {cierres.length > 0 && (
+              {cierres.filter(c => isAdmin || c.vendedor === user.nombre).length > 0 && (
                 <Card title="Historial de cierres anteriores">
-                  {cierres.slice(0,15).map(c => (
+                  {cierres.filter(c => isAdmin || c.vendedor === user.nombre).slice(0,15).map(c => (
                     <div key={c.id} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
                       <span style={{ color:C.t2 }}>{c.f} · {c.hora}</span>
                       <span style={{ color:C.t3 }}>{c.vendedor}</span>
@@ -2152,6 +2161,14 @@ export default function MaderERP() {
               {/* Panel de filtros estilo profesional */}
               <Card style={{ marginBottom:14, padding:"14px 16px" }}>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:10, alignItems:"end" }}>
+
+                  {/* Búsqueda por texto */}
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>🔍 Buscar por nombre de artículo</label>
+                    <input type="text" value={kFiltBusq||""} onChange={e => setKFiltBusq(e.target.value)}
+                      placeholder="Escribe el nombre del mueble... ej: Ropero, Zapatero, Cómoda"
+                      style={{ width:"100%", background:C.white, border:`1px solid ${kFiltBusq?C.ac:C.border}`, borderRadius:8, padding:"7px 10px", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1 }}/>
+                  </div>
 
                   {/* Rango de fechas */}
                   <div>
