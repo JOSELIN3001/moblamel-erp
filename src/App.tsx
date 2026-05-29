@@ -4914,16 +4914,15 @@ function UsuarioForm({ form, onSave, onCancel, icoset, roles, todosModulos, modu
             style={{ width:"100%", background:"#fff", border:"1px solid #e2e6ed", borderRadius:8, padding:"8px 10px", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:"#2d3748" }}/>
         </div>
       </div>
-        {f.rol === "vendedor" && (
-          <div>
-            <label style={{ fontSize:11, fontWeight:600, color:"#718096", display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>💰 Sueldo base semanal S/</label>
-            <input type="number" min="0" value={f.sueldoSemanal||""} onChange={e => U("sueldoSemanal", parseFloat(e.target.value)||0)}
-              placeholder="Ej: 300"
-              style={{ width:"100%", background:"#fff", border:"2px solid #e07b39", borderRadius:8, padding:"8px 10px", fontSize:16, fontWeight:800, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:"#c4622a" }}/>
-            <div style={{ fontSize:10, color:"#a0aec0", marginTop:3 }}>Solo admin puede ver/editar · Se usa en el punto de equilibrio</div>
-          </div>
-        )}
-      </div>
+      {f.rol === "vendedor" && (
+        <div style={{ marginBottom:14 }}>
+          <label style={{ fontSize:11, fontWeight:600, color:"#718096", display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>💰 Sueldo base semanal S/</label>
+          <input type="number" min="0" value={f.sueldoSemanal||""} onChange={e => U("sueldoSemanal", parseFloat(e.target.value)||0)}
+            placeholder="Ej: 300"
+            style={{ width:"100%", background:"#fff", border:"2px solid #e07b39", borderRadius:8, padding:"8px 10px", fontSize:16, fontWeight:800, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:"#c4622a" }}/>
+          <div style={{ fontSize:10, color:"#a0aec0", marginTop:3 }}>Solo admin puede ver/editar · Se usa en el punto de equilibrio</div>
+        </div>
+      )}
       {/* Rol */}
       <div style={{ marginBottom:16 }}>
         <label style={{ fontSize:11, fontWeight:600, color:"#718096", display:"block", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.4px" }}>Rol base</label>
