@@ -971,6 +971,16 @@ export default function MaderERP() {
   }).sort((a,b) => b.Unidades - a.Unidades);
 
   // ─── PANTALLA CARGA INICIAL ───────────────────────────────────────────────
+  const isAdmin   = user?.rol === "admin";
+  const userModulos = user?.modulos || modulosPorRol(user?.rol || "vendedor");
+  const navItems = !user ? [] : TODOS_MODULOS.filter(m => userModulos.includes(m.id)).map(m => ({
+    id: m.id, ico: { dashboard:"🏠",pos:"🛒",ventas:"💰",pedidos:"📬",traslados:"🚚",vendedores:"🏆",clientes:"👥",cotiz:"📋",inventario:"📦",kardex:"📒",produccion:"🔨",compras:"🏭",gastos:"💸",finanzas:"📊",abc:"🏆",prediccion:"🔮",usuarios:"👤",ia:"🤖" }[m.id], label: m.label.replace(/^.{2}/,"")
+  })).map(m => ({ ...m, label: TODOS_MODULOS.find(x=>x.id===m.id)?.label.slice(2).trim() || m.label }));
+  const modActual = navItems.find(n => n.id === mod) ? mod : navItems[0]?.id || "pos";
+
+  // Auto-colapsar sidebar en POS — DEBE ir antes de cualquier return condicional
+  useEffect(() => { if (user) setSidebarOpen(modActual !== "pos"); }, [modActual, user]);
+
   if (!dbReady) return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${C.bg} 0%,${C.bg2} 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"'Segoe UI',sans-serif", gap:16 }}>
       <img src={LOGO_MED} alt="MoblaMel" style={{ width:72, height:72, objectFit:"contain", borderRadius:16 }}/>
@@ -1004,18 +1014,6 @@ export default function MaderERP() {
       </div>
     </div>
   );
-
-  const isAdmin   = user.rol === "admin";
-  // Módulos que este usuario tiene habilitados (admin siempre ve todo)
-  const userModulos = user.modulos || modulosPorRol(user.rol);
-  const navItems = TODOS_MODULOS.filter(m => userModulos.includes(m.id)).map(m => ({
-    id: m.id, ico: { dashboard:"🏠",pos:"🛒",ventas:"💰",pedidos:"📬",traslados:"🚚",vendedores:"🏆",clientes:"👥",cotiz:"📋",inventario:"📦",kardex:"📒",produccion:"🔨",compras:"🏭",gastos:"💸",finanzas:"📊",abc:"🏆",prediccion:"🔮",usuarios:"👤",ia:"🤖" }[m.id], label: m.label.replace(/^.{2}/,"") // strip emoji for label
-  })).map(m => ({ ...m, label: TODOS_MODULOS.find(x=>x.id===m.id)?.label.slice(2).trim() || m.label }));
-
-  const modActual = navItems.find(n => n.id === mod) ? mod : navItems[0]?.id || "pos";
-
-  // Auto-colapsar sidebar en POS para maximizar espacio en móvil
-  useEffect(() => { setSidebarOpen(modActual !== "pos"); }, [modActual]);
 
   // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────────
   return (
