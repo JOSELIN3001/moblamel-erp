@@ -474,6 +474,7 @@ export default function MaderERP() {
   const [scanMode,  setScanMode]  = useState(false);
   const [scanVal,   setScanVal]   = useState("");
   const [voucher,   setVoucher]   = useState(null);
+  const [voucherFmt, setVoucherFmt] = useState("ticket");
   const [posTab,    setPosTab]    = useState("catalogo"); // "catalogo" | "cobro"
   const posFase = posTab;
 
@@ -998,12 +999,7 @@ export default function MaderERP() {
         <div style={{ marginBottom:16 }}><Inp label="Contraseña" type="password" value={lP} onChange={e => setLP(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} /></div>
         {lErr && <div style={{ color:C.rd, fontSize:12, marginBottom:10, textAlign:"center" }}>{lErr}</div>}
         <Btn variant="primary" full onClick={login}>Ingresar →</Btn>
-        <div style={{ marginTop:14, background:C.bg, borderRadius:8, padding:"10px 12px" }}>
-          <div style={{ fontSize:10, color:C.t4, marginBottom:5, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px" }}>Accesos de prueba</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:3 }}>
-            {USUARIOS_INIT.map(u => <div key={u.id} style={{ fontSize:11, color:C.t3 }}>{u.ico} <strong>{u.nombre}</strong> → {u.pass}</div>)}
-          </div>
-        </div>
+        
       </div>
     </div>
   );
@@ -1016,6 +1012,9 @@ export default function MaderERP() {
   })).map(m => ({ ...m, label: TODOS_MODULOS.find(x=>x.id===m.id)?.label.slice(2).trim() || m.label }));
 
   const modActual = navItems.find(n => n.id === mod) ? mod : navItems[0]?.id || "pos";
+
+  // Auto-colapsar sidebar en POS para maximizar espacio en móvil
+  useEffect(() => { setSidebarOpen(modActual !== "pos"); }, [modActual]);
 
   // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────────
   return (
@@ -1568,7 +1567,7 @@ export default function MaderERP() {
                         </div>
                       </>)}
                       <button onClick={posCobrar} disabled={!posCarrito.length||posFalta>0.01}
-                        style={{width:"100%",padding:"14px",borderRadius:10,border:"none",background:posCarrito.length&&posFalta<=0.01?"#27ae60":C.bg3,color:posCarrito.length&&posFalta<=0.01?"#fff":C.t4,fontSize:16,fontWeight:800,cursor:posCarrito.length&&posFalta<=0.01?"pointer":"not-allowed",fontFamily:"inherit",letterSpacing:"0.5px"}}>
+                        style={{width:"100%",padding:"14px",borderRadius:10,border:"none",background:posCarrito.length&&posFalta<=0.01?"#27ae60":C.bg3,color:posCarrito.length&&posFalta<=0.01?"#fff":C.t4,fontSize:16,fontWeight:800,cursor:posCarrito.length&&posFalta<=0.01?"pointer":"not-allowed",fontFamily:"inherit",letterSpacing:"0.5px",position:"sticky",bottom:8,zIndex:10,boxShadow:posCarrito.length&&posFalta<=0.01?"0 4px 16px #27ae6055":"none"}}>
                         ✅ COBRAR S/ {posTotal.toFixed(2)}
                       </button>
                     </div>
@@ -1694,6 +1693,104 @@ export default function MaderERP() {
                   </tbody>
                 </table>
               </Card>
+            </>);
+          })()}
+
+          {/* ═══════ INVENTARIO ═══════ */}
+          {modActual === "caja" && (() => {
+            // Ventas del día del usuario actual (vendedor ve solo las suyas, admin ve todas)
+            const ventasDia = ventas.filter(v => v.f === HOY && !v.esAnticipo && (isAdmin || v.vend === user.nombre));
+            const anticiposDia = ventas.filter(v => v.f === HOY && v.esAnticipo && (isAdmin || v.vend === user.nombre));
+            const totalDia = ventasDia.reduce((a,v) => a+v.tot, 0);
+            const totalAnt = anticiposDia.reduce((a,v) => a+v.tot, 0);
+            // Agrupar por método de pago
+            const metodos = {};
+            ventasDia.forEach(v => {
+              v.mp.split("+").forEach(mp => {
+                const m = mp.trim();
+                metodos[m] = (metodos[m]||0) + v.tot / v.mp.split("+").length;
+              });
+            });
+            const yaCerrado = cierres.some(c => c.f === HOY && (isAdmin ? true : c.vendedor === user.nombre));
+
+            const hacerCierre = () => {
+              if (yaCerrado) { showToast("Ya existe un cierre para hoy", "err"); return; }
+              if (ventasDia.length === 0 && anticiposDia.length === 0) { showToast("No hay ventas hoy para cerrar", "err"); return; }
+              const nc = {
+                id: "CJ"+uid(), f: HOY, hora: new Date().toLocaleTimeString("es-PE"),
+                vendedor: isAdmin ? "Admin" : user.nombre,
+                ventas: ventasDia.map(v => v.id),
+                anticipos: anticiposDia.map(v => v.id),
+                total: totalDia, totalAnticipo: totalAnt,
+                metodos, totalGeneral: totalDia + totalAnt
+              };
+              setCierres(cs => { sbSave("cierres", nc); return [nc, ...cs]; });
+              showToast(`✓ Cierre registrado · S/${(totalDia+totalAnt).toFixed(2)} total del día`);
+            };
+
+            return (<>
+              <PageTitle title="🏦 Cierre de Caja" sub={`${HOY} · ${isAdmin ? "Todas las ventas" : user.nombre}`} />
+              {yaCerrado && (
+                <div style={{ background:"#f0fff4", border:"1px solid #68d391", borderRadius:10, padding:"10px 16px", marginBottom:16, color:"#276749", fontSize:13 }}>
+                  ✅ Ya realizaste el cierre de caja de hoy
+                </div>
+              )}
+              {/* Resumen del día */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12, marginBottom:20 }}>
+                <KPI icon="🧾" label="Ventas hoy" value={ventasDia.length} color={C.grL} sub={`S/${totalDia.toFixed(2)}`}/>
+                <KPI icon="💰" label="Total ventas" value={`S/${totalDia.toFixed(2)}`} color={C.ac}/>
+                <KPI icon="📥" label="Anticipos" value={`S/${totalAnt.toFixed(2)}`} color={C.bl} sub={`${anticiposDia.length} pagos`}/>
+                <KPI icon="💵" label="Total en caja" value={`S/${(totalDia+totalAnt).toFixed(2)}`} color={C.gr}/>
+              </div>
+              {/* Desglose por método */}
+              <Card title="Desglose por método de pago" style={{ marginBottom:16 }}>
+                {Object.keys(metodos).length === 0
+                  ? <div style={{ color:C.t3, fontSize:13, padding:"8px 0" }}>No hay ventas registradas hoy</div>
+                  : Object.entries(metodos).map(([mp, tot]) => (
+                    <div key={mp} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}`, fontSize:14 }}>
+                      <span style={{ color:C.t2 }}>{mp}</span>
+                      <strong style={{ color:C.ac }}>S/ {tot.toFixed(2)}</strong>
+                    </div>
+                  ))
+                }
+              </Card>
+              {/* Lista de ventas del día */}
+              <Card title={`Ventas del día (${ventasDia.length})`} style={{ marginBottom:16 }}>
+                {ventasDia.length === 0
+                  ? <div style={{ color:C.t3, fontSize:13 }}>Sin ventas hoy</div>
+                  : ventasDia.map(v => (
+                    <div key={v.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
+                      <div>
+                        <span style={{ fontWeight:600, color:C.t1 }}>{v.num}</span>
+                        <span style={{ color:C.t3, marginLeft:8 }}>{v.cli}</span>
+                        <span style={{ color:C.t4, marginLeft:8, fontSize:11 }}>{v.items.map(i=>i.n).join(", ")}</span>
+                      </div>
+                      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                        <span style={{ fontSize:11, color:C.t3 }}>{v.mp}</span>
+                        <strong style={{ color:C.ac }}>S/ {v.tot.toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  ))
+                }
+              </Card>
+              {/* Historial de cierres */}
+              {cierres.length > 0 && (
+                <Card title="Historial de cierres anteriores">
+                  {cierres.slice(0,10).map(c => (
+                    <div key={c.id} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
+                      <span style={{ color:C.t2 }}>{c.f} · {c.hora}</span>
+                      <span style={{ color:C.t3 }}>{c.vendedor}</span>
+                      <strong style={{ color:C.ac }}>S/ {(c.totalGeneral||c.total||0).toFixed(2)}</strong>
+                    </div>
+                  ))}
+                </Card>
+              )}
+              {/* Botón cierre */}
+              {!yaCerrado && (
+                <div style={{ marginTop:20 }}>
+                  <Btn variant="primary" full onClick={hacerCierre}>🔒 Realizar Cierre de Caja del Día</Btn>
+                </div>
+              )}
             </>);
           })()}
 
@@ -1839,7 +1936,7 @@ export default function MaderERP() {
               {invVista === "tabla" && (
               <Card>
                 <table style={{ width:"100%", borderCollapse:"collapse" }}>
-                  <thead><tr><TH>Producto</TH><TH>Tipo</TH><TH>Colores</TH><TH>Stock por ubicación</TH><TH>Cód. Barras</TH><TH right>Total</TH><TH right>Mín</TH><TH right>Precio venta</TH><TH right>Costo unit.</TH><TH right>Margen</TH><TH>Estado</TH><TH></TH></tr></thead>
+                  <thead><tr><TH>Producto</TH>{isAdmin&&<TH>Tipo</TH>}<TH>Colores</TH><TH>Stock por ubicación</TH><TH>Cód. Barras</TH><TH right>Total</TH><TH right>Mín</TH><TH right>Precio venta</TH>{isAdmin&&<TH right>Costo unit.</TH>}{isAdmin&&<TH right>Margen</TH>}<TH>Estado</TH>{isAdmin&&<TH></TH>}</tr></thead>
                   <tbody>
                     {invFiltrado.map(p => {
                       const stk  = getTotalStk(p);
@@ -1848,7 +1945,7 @@ export default function MaderERP() {
                       return (
                         <tr key={p.id}>
                           <TD bold color={C.t1}>{p.ico} {p.n} <span style={{fontSize:10,color:C.t4,fontWeight:400}}>{p.id}</span></TD>
-                          <TD><Badge color={p.tipo === "Fabricado" ? C.grL : C.bl}>{p.tipo}</Badge></TD>
+                          {isAdmin && <TD><Badge color={p.tipo === "Fabricado" ? C.grL : C.bl}>{p.tipo}</Badge></TD>}
                           <TD sm color={C.t3}>{p.cols.join(", ")}</TD>
                           <TD>
                             <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
@@ -1883,15 +1980,15 @@ export default function MaderERP() {
                           <TD right bold color={est[1]}>{stk}</TD>
                           <TD right color={C.t3}>{p.min}</TD>
                           <TD right bold color={C.t1}>{fmt(p.p)}</TD>
-                          <TD right><span style={{ fontWeight:700, color:C.or, background:C.orBg, padding:"2px 7px", borderRadius:5, fontSize:12 }}>{fmt(p.c)}</span></TD>
-                          <TD right><Badge color={mg >= 40 ? C.grL : mg >= 25 ? C.or : C.rd}>{mg}%</Badge></TD>
+                          {isAdmin && <TD right><span style={{ fontWeight:700, color:C.or, background:C.orBg, padding:"2px 7px", borderRadius:5, fontSize:12 }}>{fmt(p.c)}</span></TD>}
+                          {isAdmin && <TD right><Badge color={mg >= 40 ? C.grL : mg >= 25 ? C.or : C.rd}>{mg}%</Badge></TD>}
                           <TD><Badge color={est[1]}>{est[0]}</Badge></TD>
-                          <TD>
+                          {isAdmin && <TD>
                             <button onClick={() => setProdEdit({ ...p })}
                               style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.t2, fontSize:11, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
                               ✏️ Editar
                             </button>
-                          </TD>
+                          </TD>}
                         </tr>
                       );
                     })}
@@ -3105,6 +3202,7 @@ export default function MaderERP() {
                             {u.activo ? "✓ Activo" : "○ Inactivo"}
                           </button>
                           <Btn sm onClick={() => setModal({ tipo:"nuevoUser", form:{ ...u, modulos: uMods } })}>✏️ Editar</Btn>
+                          <Btn sm onClick={() => setModal({ tipo:"cambiarPass", userId: u.id, nombre: u.nombre })}>🔑 Contraseña</Btn>
                         </div>
                       </div>
                     </Card>
@@ -3118,6 +3216,33 @@ export default function MaderERP() {
                   <UsuarioForm form={modal.form} onSave={guardarUser} onCancel={() => setModal(null)} icoset={ICOSET} roles={ROLES} todosModulos={TODOS_MODULOS} modulosPorRol={modulosPorRol}/>
                 </Modal>
               )}
+              {modal?.tipo === "cambiarPass" && (() => {
+                const [np, setNp] = useState("");
+                const [np2, setNp2] = useState("");
+                return (
+                  <Modal onClose={() => setModal(null)}>
+                    <ModalTitle>🔑 Cambiar contraseña · {modal.nombre}</ModalTitle>
+                    <Inp label="Nueva contraseña" type="password" value={np} onChange={e => setNp(e.target.value)} style={{ marginBottom:10 }}/>
+                    <Inp label="Confirmar contraseña" type="password" value={np2} onChange={e => setNp2(e.target.value)} style={{ marginBottom:16 }}/>
+                    <div style={{ display:"flex", gap:8 }}>
+                      <Btn variant="primary" full onClick={() => {
+                        if (!np) { showToast("Escribe la nueva contraseña", "err"); return; }
+                        if (np !== np2) { showToast("Las contraseñas no coinciden", "err"); return; }
+                        if (np.length < 4) { showToast("Mínimo 4 caracteres", "err"); return; }
+                        setUsuarios(us => us.map(u => {
+                          if (u.id !== modal.userId) return u;
+                          const nu = { ...u, pass: np };
+                          sbSave("usuarios", nu);
+                          return nu;
+                        }));
+                        showToast(`✓ Contraseña de ${modal.nombre} actualizada`);
+                        setModal(null);
+                      }}>Guardar</Btn>
+                      <Btn full onClick={() => setModal(null)}>Cancelar</Btn>
+                    </div>
+                  </Modal>
+                );
+              })()}
             </>);
           })()}
 
@@ -3721,6 +3846,9 @@ export default function MaderERP() {
               <button onClick={() => setVoucher(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"4px 10px", color:C.t3, cursor:"pointer", fontSize:12 }}>✕</button>
             </div>
             <div id="voucher-print" style={{ background:"#fff", color:"#111", padding:"18px 16px", fontFamily:"'Courier New',monospace", fontSize:12 }}>
+              <div style={{ textAlign:"center", marginBottom:6 }}>
+                <img src={LOGO_MED} alt="MoblaMel" style={{ width:56, height:56, objectFit:"contain" }}/>
+              </div>
               <div style={{ textAlign:"center", fontWeight:700, fontSize:13, marginBottom:2 }}>MOBLAMEL</div>
               <div style={{ textAlign:"center", fontSize:10, color:"#555", marginBottom:8 }}>RUC: 10402654703 · Villa El Salvador, Lima</div>
               <div style={{ borderTop:"1px dashed #ccc", margin:"6px 0" }}/>
@@ -3753,7 +3881,16 @@ export default function MaderERP() {
               {voucher.comp === "Nota de Venta" && <div style={{ textAlign:"center", fontSize:10, color:"#888", marginTop:6, fontStyle:"italic" }}>Documento de uso interno · Sin valor fiscal</div>}
               <div style={{ textAlign:"center", fontSize:10, color:"#888", marginTop:8, borderTop:"1px dashed #ccc", paddingTop:6 }}>¡Gracias por su compra! · MoblaMel</div>
             </div>
-            <div style={{ padding:"10px 14px", display:"flex", gap:8 }}>
+            <div style={{ padding:"10px 14px", display:"flex", gap:8, flexDirection:"column" }}>
+              <div style={{ display:"flex", gap:6, marginBottom:2 }}>
+                {["ticket","a4"].map(f => (
+                  <button key={f} onClick={() => setVoucherFmt(f)}
+                    style={{ flex:1, padding:"6px", borderRadius:6, border:`1px solid ${voucherFmt===f?C.ac:C.border}`, background:voucherFmt===f?C.acBg:"transparent", color:voucherFmt===f?C.ac:C.t3, fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                    {f==="ticket"?"🧾 Ticket (80mm)":"📄 A4"}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
               {/* IMPRIMIR — método que funciona en todos los navegadores */}
               <button onClick={() => {
                 const el = document.getElementById('voucher-print');
@@ -3761,14 +3898,16 @@ export default function MaderERP() {
                 const contenido = el.innerHTML;
                 const ventana = window.open('', '_blank');
                 if (!ventana) { showToast("Permite ventanas emergentes en tu navegador","err"); return; }
+                const isA4 = voucherFmt === "a4";
                 ventana.document.write(`<!DOCTYPE html>
 <html><head>
   <meta charset="utf-8">
   <title>Comprobante ${voucher.num}</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: 'Courier New', monospace; font-size: 13px; padding: 20px; max-width: 320px; }
-    @media print { body { padding: 0; } @page { margin: 5mm; size: 80mm auto; } }
+    body { font-family: ${isA4 ? "'Arial',sans-serif" : "'Courier New',monospace"}; font-size: ${isA4?"14px":"12px"}; padding: ${isA4?"40px":"10px"}; ${isA4?"max-width:210mm;margin:0 auto;":""} }
+    img { display:block; margin:0 auto; }
+    @media print { body { padding: ${isA4?"20mm 20mm":"0"}; } @page { margin: ${isA4?"10mm":"3mm"}; size: ${isA4?"A4":"80mm auto"}; } }
   </style>
 </head><body>${contenido}
 <script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);}<\/script>
@@ -3802,6 +3941,7 @@ ${pagos}
 _MoblaMel · Muebles en Melamina_`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
               }} style={{ flex:1, padding:"12px", borderRadius:8, border:"1px solid #25D366", background:"#25D366", color:"#fff", fontWeight:700, cursor:"pointer", fontSize:13, fontFamily:"inherit" }}>📲 WhatsApp</button>
+            </div>
             </div>
           </div>
         </div>
