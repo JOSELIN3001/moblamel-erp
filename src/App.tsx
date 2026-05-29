@@ -1144,16 +1144,18 @@ export default function MaderERP() {
                   const miTotal = misVentasMes.reduce((a,v)=>a+v.tot,0);
                   const miAnterior = misVentas.filter(v=>v.f.startsWith(HOY.slice(0,5)+(parseInt(HOY.slice(5,7))-1).toString().padStart(2,"0"))).reduce((a,v)=>a+v.tot,0);
                   const FRASES = [
-                    "💪 ¡Cada venta cuenta! Hoy puede ser tu mejor día.",
-                    "🌟 ¡Tú puedes! Una buena actitud cierra más ventas.",
-                    "🔥 ¡Sigue así! Tu esfuerzo se convierte en comisión.",
-                    "😊 Un cliente feliz regresa y trae amigos.",
-                    "🚀 ¡Enfócate! Las metas se cumplen venta a venta.",
-                    "🏆 Los campeones no nacen, se forjan vendiendo.",
-                    "✨ ¡Hoy es un gran día para superar tu récord!",
-                    "💡 Conoce tu producto y convierte dudas en ventas.",
-                    "🎯 ¡Meta clara, resultado seguro!",
-                    "🤝 Una sonrisa genuina vale más que cualquier descuento.",
+                    "💪 ¡Cada cliente es una oportunidad! Sonríe, escucha y cierra esa venta — tu comisión te lo agradecerá.",
+                    "🌟 Un espacio limpio y ordenado genera confianza. ¡El cliente que se siente bien, compra más!",
+                    "🔥 ¡Hoy puede ser tu mejor día! Cada 'no' te acerca al próximo 'sí'. ¡Sigue adelante!",
+                    "😊 Tu actitud es tu mejor herramienta. Un vendedor amable y atento siempre supera sus metas.",
+                    "🚀 ¡Las comisiones no se esperan, se conquistan! Da el 100% en cada atención.",
+                    "🏆 Los mejores vendedores no nacen — se forjan siendo amables, honestos y persistentes.",
+                    "✨ ¡Mantén tu área impecable! Un ambiente agradable invita al cliente a quedarse y comprar.",
+                    "🎯 Conoce cada producto, responde con seguridad y el cliente confiará en ti. ¡Tú puedes!",
+                    "💡 Una buena atención hoy es un cliente fiel mañana. ¡Invierte en cada interacción!",
+                    "🤝 Sé el vendedor que a ti te gustaría encontrar: honesto, amable y siempre dispuesto a ayudar.",
+                    "⭐ ¡Tu energía se contagia! Si tú crees en el producto, el cliente también creerá en él.",
+                    "🌺 Un 'gracias, fue un placer atenderle' puede traer al cliente de vuelta. ¡Cuida cada detalle!",
                   ];
                   const frase = FRASES[new Date().getDate() % FRASES.length];
                   return (
@@ -1639,7 +1641,26 @@ export default function MaderERP() {
               {/* KPIs dinámicos del filtro */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:14 }}>
                 <KPI icon="💰" label={hayFiltro?"Total filtrado":"Ingresos del mes"} value={fmt(hayFiltro?totalFilt:kpi.ing)} color={C.grL} sub={`${ventasFilt.length} ventas cerradas`}/>
-                <KPI icon="🎫" label="Ticket promedio" value={fmt(ventasFilt.length ? totalFilt/ventasFilt.length : 0)} color={C.ac}/>
+                {isAdmin
+                  ? <KPI icon="🎫" label="Ticket promedio" value={fmt(ventasFilt.length ? totalFilt/ventasFilt.length : 0)} color={C.ac}/>
+                  : <div style={{ background:"linear-gradient(135deg,#fff7ed,#fed7aa)", border:"1px solid #fdba74", borderRadius:14, padding:"12px 14px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:"#c05621", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}>💬 Frase del día</div>
+                      <div style={{ fontSize:12, color:"#7c2d12", fontWeight:600, lineHeight:1.4 }}>{[
+                        "💪 ¡Cada cliente es una oportunidad! Sonríe, escucha y cierra esa venta — tu comisión te lo agradecerá.",
+                        "🌟 Un espacio limpio y ordenado genera confianza. ¡El cliente que se siente bien, compra más!",
+                        "🔥 ¡Hoy puede ser tu mejor día! Cada 'no' te acerca al próximo 'sí'. ¡Sigue adelante!",
+                        "😊 Tu actitud es tu mejor herramienta. Un vendedor amable y atento siempre supera sus metas.",
+                        "🚀 ¡Las comisiones no se esperan, se conquistan! Da el 100% en cada atención.",
+                        "🏆 Los mejores vendedores no nacen — se forjan siendo amables, honestos y persistentes.",
+                        "✨ ¡Mantén tu área impecable! Un ambiente agradable invita al cliente a quedarse y comprar.",
+                        "🎯 Conoce cada producto, responde con seguridad y el cliente confiará en ti. ¡Tú puedes!",
+                        "💡 Una buena atención hoy es un cliente fiel mañana. ¡Invierte en cada interacción!",
+                        "🤝 Sé el vendedor que a ti te gustaría encontrar: honesto, amable y siempre dispuesto a ayudar.",
+                        "⭐ ¡Tu energía se contagia! Si tú crees en el producto, el cliente también creerá en él.",
+                        "🌺 Un 'gracias, fue un placer atenderle' puede traer al cliente de vuelta. ¡Cuida cada detalle!",
+                      ][new Date().getDate() % 12]}</div>
+                    </div>
+                }
                 <KPI icon="📄" label="Facturas" value={ventasFilt.filter(v=>v.comp==="Factura").length} color={C.bl}/>
                 <KPI icon="🧾" label="Boletas" value={ventasFilt.filter(v=>v.comp==="Boleta").length} color={C.grL}/>
               </div>
