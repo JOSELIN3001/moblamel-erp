@@ -1010,49 +1010,49 @@ export default function MaderERP() {
   // ─── PANTALLA LOGIN ──────────────────────────────────────────────────────────
   if (!user) return (
     <div style={{ minHeight:"100vh", display:"flex", fontFamily:"'Segoe UI','Helvetica Neue',sans-serif" }}>
-      {/* Panel izquierdo — decorativo */}
-      <div style={{ flex:1, background:`linear-gradient(160deg, #3d2b1a 0%, #6b4226 50%, #a0714f 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:48, position:"relative", overflow:"hidden" }}>
-        {/* Círculos decorativos */}
+      <style>{`@media(max-width:640px){.login-panel-left{display:none!important}.login-panel-right{width:100%!important;max-width:100%!important}}`}</style>
+      {/* Panel izquierdo — solo desktop */}
+      <div className="login-panel-left" style={{ flex:1, background:`linear-gradient(160deg, #3d2b1a 0%, #6b4226 50%, #a0714f 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:48, position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", width:400, height:400, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.08)", top:-100, left:-100 }}/>
         <div style={{ position:"absolute", width:300, height:300, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.06)", bottom:-80, right:-80 }}/>
-        <div style={{ position:"absolute", width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,0.04)", top:"30%", right:"10%" }}/>
-        {/* Logo grande */}
-        <img src={LOGO_MED} alt="MoblaMel" style={{ width:120, height:120, objectFit:"contain", marginBottom:24, filter:"brightness(0) invert(1)", opacity:0.9 }}/>
+        {/* Logo SIN filtro — muestra los colores originales */}
+        <img src={LOGO_MED} alt="MoblaMel" style={{ width:120, height:120, objectFit:"contain", marginBottom:24 }}/>
         <div style={{ fontSize:32, fontWeight:800, color:"#fff", letterSpacing:"-0.5px", marginBottom:8 }}>MoblaMel</div>
-        <div style={{ fontSize:15, color:"rgba(255,255,255,0.65)", textAlign:"center", lineHeight:1.6, maxWidth:260 }}>Sistema de gestión para mueblería de melamina</div>
-        <div style={{ marginTop:40, display:"flex", gap:16, flexWrap:"wrap", justifyContent:"center" }}>
+        <div style={{ fontSize:15, color:"rgba(255,255,255,0.70)", textAlign:"center", lineHeight:1.6, maxWidth:260 }}>Sistema de gestión para mueblería de melamina</div>
+        <div style={{ marginTop:36, display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center" }}>
           {["📦 Inventario","💰 Ventas","📊 Reportes","🚚 Pedidos"].map(f => (
-            <div key={f} style={{ background:"rgba(255,255,255,0.10)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"6px 14px", fontSize:12, color:"rgba(255,255,255,0.8)", backdropFilter:"blur(4px)" }}>{f}</div>
+            <div key={f} style={{ background:"rgba(255,255,255,0.10)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"6px 14px", fontSize:12, color:"rgba(255,255,255,0.85)" }}>{f}</div>
           ))}
         </div>
       </div>
       {/* Panel derecho — formulario */}
-      <div style={{ width:420, background:C.white, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 40px", boxShadow:"-4px 0 24px rgba(60,35,15,0.12)" }}>
+      <div className="login-panel-right" style={{ width:440, background:C.white, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 40px", boxShadow:"-4px 0 24px rgba(60,35,15,0.10)" }}>
         <div style={{ width:"100%", maxWidth:340 }}>
-          <div style={{ textAlign:"center", marginBottom:36 }}>
-            <div style={{ fontSize:24, fontWeight:800, color:C.t1, marginBottom:6 }}>Bienvenido</div>
+          <div style={{ textAlign:"center", marginBottom:32 }}>
+            {/* Logo en móvil */}
+            <img src={LOGO_MED} alt="MoblaMel" style={{ width:64, height:64, objectFit:"contain", marginBottom:10, display:"block", margin:"0 auto 10px" }}/>
+            <div style={{ fontSize:24, fontWeight:800, color:C.t1, marginBottom:4 }}>Bienvenido</div>
             <div style={{ fontSize:13, color:C.t3 }}>Ingresa tus credenciales para continuar</div>
           </div>
           <div style={{ marginBottom:16 }}>
-            <label style={{ fontSize:12, fontWeight:600, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.3px" }}>USUARIO</label>
+            <label style={{ fontSize:11, fontWeight:700, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.5px" }}>USUARIO</label>
             <input value={lU} onChange={e => setLU(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
               placeholder="Tu nombre de usuario"
-              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1, transition:"border 0.15s" }}
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1 }}
               onFocus={e => e.target.style.borderColor=C.ac} onBlur={e => e.target.style.borderColor=C.border}/>
           </div>
           <div style={{ marginBottom:8 }}>
-            <label style={{ fontSize:12, fontWeight:600, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.3px" }}>CONTRASEÑA</label>
+            <label style={{ fontSize:11, fontWeight:700, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.5px" }}>CONTRASEÑA</label>
             <input type="password" value={lP} onChange={e => setLP(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
               placeholder="••••••••"
-              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1, transition:"border 0.15s" }}
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1 }}
               onFocus={e => e.target.style.borderColor=C.ac} onBlur={e => e.target.style.borderColor=C.border}/>
           </div>
           {lErr && <div style={{ color:C.rd, fontSize:12, marginBottom:12, padding:"8px 12px", background:C.rdBg, borderRadius:8 }}>⚠️ {lErr}</div>}
-          <button onClick={login} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:`linear-gradient(135deg, ${C.ac}, ${C.acD})`, color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:16, boxShadow:"0 4px 14px rgba(100,60,20,0.30)", letterSpacing:"0.3px", transition:"opacity 0.15s" }}
-            onMouseOver={e => e.currentTarget.style.opacity="0.92"} onMouseOut={e => e.currentTarget.style.opacity="1"}>
+          <button onClick={login} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:`linear-gradient(135deg, ${C.ac}, ${C.acD})`, color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:16, boxShadow:"0 4px 14px rgba(100,60,20,0.25)", letterSpacing:"0.3px" }}>
             Ingresar →
           </button>
-          <div style={{ textAlign:"center", marginTop:24, fontSize:11, color:C.t4 }}>MoblaMel ERP · Villa El Salvador</div>
+          <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:C.t4 }}>MoblaMel ERP · Villa El Salvador</div>
         </div>
       </div>
     </div>
