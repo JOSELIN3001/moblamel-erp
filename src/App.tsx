@@ -1,4 +1,4 @@
-// MoblaMel ERP v45 - Build 2
+// MoblaMel ERP v46 - Sidebar manual, caja por vendedor, cumpleaños, frases motivadoras
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import * as XLSX_LIB from "xlsx";
 if (typeof window !== "undefined") { (window as any).XLSX = XLSX_LIB; }
@@ -978,8 +978,15 @@ export default function MaderERP() {
   })).map(m => ({ ...m, label: TODOS_MODULOS.find(x=>x.id===m.id)?.label.slice(2).trim() || m.label }));
   const modActual = navItems.find(n => n.id === mod) ? mod : navItems[0]?.id || "pos";
 
-  // Auto-colapsar sidebar en POS — DEBE ir antes de cualquier return condicional
-  useEffect(() => { if (user) setSidebarOpen(modActual !== "pos"); }, [modActual, user]);
+  // Sidebar NO se abre/cierra automáticamente — el usuario la controla manualmente con el botón triángulo
+  // Solo se cierra automáticamente la primera vez que se entra al POS
+  const posEntradaRef = useRef(false);
+  useEffect(() => {
+    if (user && modActual === "pos" && !posEntradaRef.current) {
+      setSidebarOpen(false);
+      posEntradaRef.current = true;
+    }
+  }, [modActual, user]);
 
   if (!dbReady) return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${C.bg} 0%,${C.bg2} 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"'Segoe UI',sans-serif", gap:16 }}>
@@ -1028,6 +1035,18 @@ export default function MaderERP() {
           <span style={{ fontSize:15, fontWeight:800, color:C.ac }}>MoblaMel</span>
         </div>
         <div style={{ flex:1 }} />
+        {/* Alerta de cumpleaños — solo admin */}
+        {isAdmin && (() => {
+          const hoy = HOY.slice(5);
+          const cumpleaneros = usuarios.filter(u => u.cumple && u.cumple.slice(5) === hoy && u.activo);
+          if (!cumpleaneros.length) return null;
+          return (
+            <div style={{ display:"flex", alignItems:"center", gap:6, background:"#fef9c3", border:"1px solid #fde047", borderRadius:8, padding:"5px 10px" }}>
+              <span style={{ fontSize:14 }}>🎂</span>
+              <span style={{ fontSize:12, fontWeight:700, color:"#854d0e" }}>¡Cumpleaños de {cumpleaneros.map(u=>u.nombre).join(" y ")} hoy!</span>
+            </div>
+          );
+        })()}
         {kpi.crit > 0 && (() => {
           const critProds = prods.filter(p => getTotalStk(p) <= p.min);
           const msg = `🚨 *STOCK BAJO - ${new Date().toLocaleDateString("es-PE")}*\n\n` +
@@ -1078,7 +1097,7 @@ export default function MaderERP() {
           )}
           {sidebarOpen && <div style={{ fontSize:10, color:C.t4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", padding:"0 8px", marginBottom:6 }}>Módulos</div>}
           {navItems.map(n => (
-            <button key={n.id} onClick={() => { setMod(n.id); if(n.id==="pos") setSidebarOpen(false); }} title={n.label}
+            <button key={n.id} onClick={() => setMod(n.id)} title={n.label}
               style={{ width:"100%", padding: sidebarOpen?"8px 10px":"8px 4px", borderRadius:8, border:"none", background: modActual === n.id ? C.acBg : "transparent", color: modActual === n.id ? C.ac : C.t3, fontSize:12, fontWeight: modActual === n.id ? 700 : 400, cursor:"pointer", textAlign:sidebarOpen?"left":"center", fontFamily:"inherit", marginBottom:1, display:"flex", alignItems:"center", gap:sidebarOpen?8:0, justifyContent:sidebarOpen?"flex-start":"center", transition:"all 0.12s", overflow:"hidden" }}>
               <span style={{ fontSize:sidebarOpen?15:18, flexShrink:0 }}>{n.ico}</span>
               {sidebarOpen && <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{n.label}</span>}
@@ -1095,7 +1114,7 @@ export default function MaderERP() {
         </div>
 
         {/* CONTENIDO */}
-        <div style={{ flex:1, overflowY:"auto", padding:22, background:C.bg }}>
+        <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", padding:22, background:C.bg, minHeight:0 }}>
 
           {/* Banner de error de BD */}
           {dbError && (
@@ -1124,10 +1143,26 @@ export default function MaderERP() {
                   const misVentasMes = misVentas.filter(v => v.f.startsWith(mesActual));
                   const miTotal = misVentasMes.reduce((a,v)=>a+v.tot,0);
                   const miAnterior = misVentas.filter(v=>v.f.startsWith(HOY.slice(0,5)+(parseInt(HOY.slice(5,7))-1).toString().padStart(2,"0"))).reduce((a,v)=>a+v.tot,0);
+                  const FRASES = [
+                    "💪 ¡Cada venta cuenta! Hoy puede ser tu mejor día.",
+                    "🌟 ¡Tú puedes! Una buena actitud cierra más ventas.",
+                    "🔥 ¡Sigue así! Tu esfuerzo se convierte en comisión.",
+                    "😊 Un cliente feliz regresa y trae amigos.",
+                    "🚀 ¡Enfócate! Las metas se cumplen venta a venta.",
+                    "🏆 Los campeones no nacen, se forjan vendiendo.",
+                    "✨ ¡Hoy es un gran día para superar tu récord!",
+                    "💡 Conoce tu producto y convierte dudas en ventas.",
+                    "🎯 ¡Meta clara, resultado seguro!",
+                    "🤝 Una sonrisa genuina vale más que cualquier descuento.",
+                  ];
+                  const frase = FRASES[new Date().getDate() % FRASES.length];
                   return (
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:20 }}>
                       <KPI icon="💰" label="Mis ventas del mes" value={fmt(miTotal)} color={C.grL} sub={`${misVentasMes.length} ventas`}/>
-                      <KPI icon="📊" label="Ticket promedio" value={fmt(misVentasMes.length?miTotal/misVentasMes.length:0)} color={C.ac}/>
+                      <div style={{ background:"linear-gradient(135deg,#fff7ed,#fed7aa)", border:"1px solid #fdba74", borderRadius:14, padding:"14px 16px", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#c05621", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:6 }}>💬 Frase del día</div>
+                        <div style={{ fontSize:13, color:"#7c2d12", fontWeight:600, lineHeight:1.4 }}>{frase}</div>
+                      </div>
                       <KPI icon="📬" label="Pedidos activos" value={pedidos.filter(p=>p.vend===user.nombre&&p.est!=="Entregado"&&p.est!=="Cancelado").length} color={C.or} sub="En curso"/>
                     </div>
                   );
@@ -1697,12 +1732,10 @@ export default function MaderERP() {
 
           {/* ═══════ INVENTARIO ═══════ */}
           {modActual === "caja" && (() => {
-            // Ventas del día del usuario actual (vendedor ve solo las suyas, admin ve todas)
             const ventasDia = ventas.filter(v => v.f === HOY && !v.esAnticipo && (isAdmin || v.vend === user.nombre));
             const anticiposDia = ventas.filter(v => v.f === HOY && v.esAnticipo && (isAdmin || v.vend === user.nombre));
             const totalDia = ventasDia.reduce((a,v) => a+v.tot, 0);
             const totalAnt = anticiposDia.reduce((a,v) => a+v.tot, 0);
-            // Agrupar por método de pago
             const metodos = {};
             ventasDia.forEach(v => {
               v.mp.split("+").forEach(mp => {
@@ -1711,6 +1744,16 @@ export default function MaderERP() {
               });
             });
             const yaCerrado = cierres.some(c => c.f === HOY && (isAdmin ? true : c.vendedor === user.nombre));
+
+            // Admin: resumen por vendedor
+            const vendedoresDia = isAdmin ? [...new Set(ventasDia.map(v => v.vend))] : [user.nombre];
+            const resumenPorVendedor = vendedoresDia.map(vend => {
+              const vs = ventasDia.filter(v => v.vend === vend);
+              const total = vs.reduce((a,v) => a+v.tot, 0);
+              const mets = {};
+              vs.forEach(v => v.mp.split("+").forEach(mp => { const m=mp.trim(); mets[m]=(mets[m]||0)+v.tot/v.mp.split("+").length; }));
+              return { vend, total, count: vs.length, mets };
+            });
 
             const hacerCierre = () => {
               if (yaCerrado) { showToast("Ya existe un cierre para hoy", "err"); return; }
@@ -1734,26 +1777,44 @@ export default function MaderERP() {
                   ✅ Ya realizaste el cierre de caja de hoy
                 </div>
               )}
-              {/* Resumen del día */}
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12, marginBottom:20 }}>
                 <KPI icon="🧾" label="Ventas hoy" value={ventasDia.length} color={C.grL} sub={`S/${totalDia.toFixed(2)}`}/>
                 <KPI icon="💰" label="Total ventas" value={`S/${totalDia.toFixed(2)}`} color={C.ac}/>
                 <KPI icon="📥" label="Anticipos" value={`S/${totalAnt.toFixed(2)}`} color={C.bl} sub={`${anticiposDia.length} pagos`}/>
                 <KPI icon="💵" label="Total en caja" value={`S/${(totalDia+totalAnt).toFixed(2)}`} color={C.gr}/>
               </div>
-              {/* Desglose por método */}
+
+              {/* Admin: resumen por vendedor */}
+              {isAdmin && resumenPorVendedor.length > 0 && (
+                <Card title="📊 Resumen por vendedor" style={{ marginBottom:16 }}>
+                  {resumenPorVendedor.map(r => (
+                    <div key={r.vend} style={{ padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                        <span style={{ fontWeight:700, color:C.t1, fontSize:14 }}>{r.vend}</span>
+                        <span style={{ fontWeight:800, color:C.ac, fontSize:14 }}>S/ {r.total.toFixed(2)}</span>
+                      </div>
+                      <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+                        <span style={{ fontSize:11, color:C.t3 }}>{r.count} ventas</span>
+                        {Object.entries(r.mets).map(([mp, tot]) => (
+                          <span key={mp} style={{ fontSize:11, color:C.t2, background:C.bg, padding:"2px 8px", borderRadius:5 }}>{mp}: S/{(tot as number).toFixed(0)}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
               <Card title="Desglose por método de pago" style={{ marginBottom:16 }}>
                 {Object.keys(metodos).length === 0
                   ? <div style={{ color:C.t3, fontSize:13, padding:"8px 0" }}>No hay ventas registradas hoy</div>
                   : Object.entries(metodos).map(([mp, tot]) => (
                     <div key={mp} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${C.border}`, fontSize:14 }}>
                       <span style={{ color:C.t2 }}>{mp}</span>
-                      <strong style={{ color:C.ac }}>S/ {tot.toFixed(2)}</strong>
+                      <strong style={{ color:C.ac }}>S/ {(tot as number).toFixed(2)}</strong>
                     </div>
                   ))
                 }
               </Card>
-              {/* Lista de ventas del día */}
               <Card title={`Ventas del día (${ventasDia.length})`} style={{ marginBottom:16 }}>
                 {ventasDia.length === 0
                   ? <div style={{ color:C.t3, fontSize:13 }}>Sin ventas hoy</div>
@@ -1761,6 +1822,7 @@ export default function MaderERP() {
                     <div key={v.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
                       <div>
                         <span style={{ fontWeight:600, color:C.t1 }}>{v.num}</span>
+                        {isAdmin && <span style={{ fontSize:11, background:C.acBg, color:C.ac, padding:"1px 6px", borderRadius:4, marginLeft:6 }}>{v.vend}</span>}
                         <span style={{ color:C.t3, marginLeft:8 }}>{v.cli}</span>
                         <span style={{ color:C.t4, marginLeft:8, fontSize:11 }}>{v.items.map(i=>i.n).join(", ")}</span>
                       </div>
@@ -1772,10 +1834,9 @@ export default function MaderERP() {
                   ))
                 }
               </Card>
-              {/* Historial de cierres */}
               {cierres.length > 0 && (
                 <Card title="Historial de cierres anteriores">
-                  {cierres.slice(0,10).map(c => (
+                  {cierres.slice(0,15).map(c => (
                     <div key={c.id} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
                       <span style={{ color:C.t2 }}>{c.f} · {c.hora}</span>
                       <span style={{ color:C.t3 }}>{c.vendedor}</span>
@@ -1784,7 +1845,6 @@ export default function MaderERP() {
                   ))}
                 </Card>
               )}
-              {/* Botón cierre */}
               {!yaCerrado && (
                 <div style={{ marginTop:20 }}>
                   <Btn variant="primary" full onClick={hacerCierre}>🔒 Realizar Cierre de Caja del Día</Btn>
@@ -3187,6 +3247,11 @@ export default function MaderERP() {
                             <span style={{ fontSize:15, fontWeight:700, color:C.t1 }}>{u.nombre}</span>
                             <Badge color={ROL_COLOR[u.rol]}>{u.rol}</Badge>
                             {!u.activo && <Badge color={C.t4}>Inactivo</Badge>}
+                            {u.cumple && (() => {
+                              const esCumple = u.cumple.slice(5) === HOY.slice(5);
+                              const fecha = new Date(u.cumple+"T12:00:00").toLocaleDateString("es-PE",{day:"2-digit",month:"long"});
+                              return <span style={{ fontSize:10, color:esCumple?"#854d0e":C.t3, background:esCumple?"#fef9c3":C.bg, padding:"2px 7px", borderRadius:5 }}>{esCumple?"🎂 ¡Hoy!":"📅"} {fecha}</span>;
+                            })()}
                           </div>
                           {/* Módulos habilitados */}
                           <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
@@ -4843,6 +4908,12 @@ function UsuarioForm({ form, onSave, onCancel, icoset, roles, todosModulos, modu
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
         <Inp label="Celular" value={f.cel||""} onChange={e => U("cel", e.target.value)} placeholder="9XXXXXXXX"/>
+        <div>
+          <label style={{ fontSize:11, fontWeight:600, color:"#718096", display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>🎂 Fecha de cumpleaños</label>
+          <input type="date" value={f.cumple||""} onChange={e => U("cumple", e.target.value)}
+            style={{ width:"100%", background:"#fff", border:"1px solid #e2e6ed", borderRadius:8, padding:"8px 10px", fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:"#2d3748" }}/>
+        </div>
+      </div>
         {f.rol === "vendedor" && (
           <div>
             <label style={{ fontSize:11, fontWeight:600, color:"#718096", display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>💰 Sueldo base semanal S/</label>
