@@ -1,4 +1,4 @@
-// MoblaMel ERP v47 - POS fullscreen, kardex busqueda texto, caja vendedor privada
+// MoblaMel ERP v48 - Diseño cálido moderno, login rediseñado, sidebar oscura
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import * as XLSX_LIB from "xlsx";
 if (typeof window !== "undefined") { (window as any).XLSX = XLSX_LIB; }
@@ -59,18 +59,23 @@ const LOGO_MED   = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAA
 
 // ─── PALETA ──────────────────────────────────────────────────────────────────
 const C = {
-  bg:"#f4f6f9", bg2:"#eef0f4", bg3:"#e4e8ef",
-  white:"#ffffff",
-  border:"#e2e6ed", borderD:"#cdd2db",
-  ac:"#e07b39", acD:"#c4622a", acL:"#f5a56e", acBg:"#fef3ec",
-  gr:"#276749", grBg:"#e6f4ed", grL:"#38a169",
-  rd:"#c53030", rdBg:"#fff0f0", rdL:"#e53e3e",
-  or:"#c05621", orBg:"#fffaf0",
-  bl:"#2b6cb0", blBg:"#ebf4ff",
-  pu:"#6b46c1", puBg:"#f3f0ff",
-  t1:"#1a202c", t2:"#4a5568", t3:"#718096", t4:"#a0aec0",
-  sh:"0 1px 3px rgba(0,0,0,0.08)",
-  sh2:"0 4px 12px rgba(0,0,0,0.1)",
+  // Fondos — crema cálido, no blanco puro
+  bg:"#f7f4f0", bg2:"#ede8e1", bg3:"#e0d9d0",
+  white:"#fdfbf8",
+  border:"#e8e0d5", borderD:"#d4c9bb",
+  // Acento principal — café dorado del logo
+  ac:"#a0714f", acD:"#7d5538", acL:"#c4956a", acBg:"#fdf3eb",
+  // Semáforos
+  gr:"#2d6a4f", grBg:"#e9f5ee", grL:"#40916c",
+  rd:"#b5341c", rdBg:"#fdf0ed", rdL:"#d64123",
+  or:"#9c5a1d", orBg:"#fdf4e7",
+  bl:"#2c5f8a", blBg:"#eaf2fb",
+  pu:"#5c3d8f", puBg:"#f2edfb",
+  // Texto
+  t1:"#2c2016", t2:"#5c4a38", t3:"#8a7560", t4:"#b5a090",
+  // Sombras suaves y cálidas
+  sh:"0 1px 4px rgba(100,70,40,0.10)",
+  sh2:"0 4px 16px rgba(100,70,40,0.13)",
 };
 
 // ─── EXPORT EXCEL (CSV con BOM para Excel en español) ────────────────────────
@@ -1004,20 +1009,51 @@ export default function MaderERP() {
 
   // ─── PANTALLA LOGIN ──────────────────────────────────────────────────────────
   if (!user) return (
-    <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${C.bg} 0%,${C.bg2} 100%)`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Segoe UI',sans-serif" }}>
-      <div style={{ width:380, background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:36, boxShadow:C.sh2 }}>
-        <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ width:80, height:80, borderRadius:16, overflow:"hidden", margin:"0 auto 12px", display:"flex", alignItems:"center", justifyContent:"center", background:"#f9f6f0" }}>
-            <img src={LOGO_MED} alt="MoblaMel" style={{ width:76, height:76, objectFit:"contain" }}/>
-          </div>
-          <div style={{ fontSize:22, fontWeight:800, color:C.ac }}>MoblaMel</div>
-          <div style={{ fontSize:12, color:C.t3, marginTop:2 }}>Sistema de gestión · Mueblería de melamina</div>
+    <div style={{ minHeight:"100vh", display:"flex", fontFamily:"'Segoe UI','Helvetica Neue',sans-serif" }}>
+      {/* Panel izquierdo — decorativo */}
+      <div style={{ flex:1, background:`linear-gradient(160deg, #3d2b1a 0%, #6b4226 50%, #a0714f 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:48, position:"relative", overflow:"hidden" }}>
+        {/* Círculos decorativos */}
+        <div style={{ position:"absolute", width:400, height:400, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.08)", top:-100, left:-100 }}/>
+        <div style={{ position:"absolute", width:300, height:300, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.06)", bottom:-80, right:-80 }}/>
+        <div style={{ position:"absolute", width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,0.04)", top:"30%", right:"10%" }}/>
+        {/* Logo grande */}
+        <img src={LOGO_MED} alt="MoblaMel" style={{ width:120, height:120, objectFit:"contain", marginBottom:24, filter:"brightness(0) invert(1)", opacity:0.9 }}/>
+        <div style={{ fontSize:32, fontWeight:800, color:"#fff", letterSpacing:"-0.5px", marginBottom:8 }}>MoblaMel</div>
+        <div style={{ fontSize:15, color:"rgba(255,255,255,0.65)", textAlign:"center", lineHeight:1.6, maxWidth:260 }}>Sistema de gestión para mueblería de melamina</div>
+        <div style={{ marginTop:40, display:"flex", gap:16, flexWrap:"wrap", justifyContent:"center" }}>
+          {["📦 Inventario","💰 Ventas","📊 Reportes","🚚 Pedidos"].map(f => (
+            <div key={f} style={{ background:"rgba(255,255,255,0.10)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"6px 14px", fontSize:12, color:"rgba(255,255,255,0.8)", backdropFilter:"blur(4px)" }}>{f}</div>
+          ))}
         </div>
-        <div style={{ marginBottom:12 }}><Inp label="Usuario" placeholder="Ej: Admin, Mamá..." value={lU} onChange={e => setLU(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} /></div>
-        <div style={{ marginBottom:16 }}><Inp label="Contraseña" type="password" value={lP} onChange={e => setLP(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} /></div>
-        {lErr && <div style={{ color:C.rd, fontSize:12, marginBottom:10, textAlign:"center" }}>{lErr}</div>}
-        <Btn variant="primary" full onClick={login}>Ingresar →</Btn>
-        
+      </div>
+      {/* Panel derecho — formulario */}
+      <div style={{ width:420, background:C.white, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 40px", boxShadow:"-4px 0 24px rgba(60,35,15,0.12)" }}>
+        <div style={{ width:"100%", maxWidth:340 }}>
+          <div style={{ textAlign:"center", marginBottom:36 }}>
+            <div style={{ fontSize:24, fontWeight:800, color:C.t1, marginBottom:6 }}>Bienvenido</div>
+            <div style={{ fontSize:13, color:C.t3 }}>Ingresa tus credenciales para continuar</div>
+          </div>
+          <div style={{ marginBottom:16 }}>
+            <label style={{ fontSize:12, fontWeight:600, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.3px" }}>USUARIO</label>
+            <input value={lU} onChange={e => setLU(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
+              placeholder="Tu nombre de usuario"
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1, transition:"border 0.15s" }}
+              onFocus={e => e.target.style.borderColor=C.ac} onBlur={e => e.target.style.borderColor=C.border}/>
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <label style={{ fontSize:12, fontWeight:600, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.3px" }}>CONTRASEÑA</label>
+            <input type="password" value={lP} onChange={e => setLP(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
+              placeholder="••••••••"
+              style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1, transition:"border 0.15s" }}
+              onFocus={e => e.target.style.borderColor=C.ac} onBlur={e => e.target.style.borderColor=C.border}/>
+          </div>
+          {lErr && <div style={{ color:C.rd, fontSize:12, marginBottom:12, padding:"8px 12px", background:C.rdBg, borderRadius:8 }}>⚠️ {lErr}</div>}
+          <button onClick={login} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:`linear-gradient(135deg, ${C.ac}, ${C.acD})`, color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:16, boxShadow:"0 4px 14px rgba(100,60,20,0.30)", letterSpacing:"0.3px", transition:"opacity 0.15s" }}
+            onMouseOver={e => e.currentTarget.style.opacity="0.92"} onMouseOut={e => e.currentTarget.style.opacity="1"}>
+            Ingresar →
+          </button>
+          <div style={{ textAlign:"center", marginTop:24, fontSize:11, color:C.t4 }}>MoblaMel ERP · Villa El Salvador</div>
+        </div>
       </div>
     </div>
   );
@@ -1027,7 +1063,7 @@ export default function MaderERP() {
     <div style={{ minHeight:"100vh", background:C.bg, color:C.t1, fontFamily:"'Segoe UI','Helvetica Neue',sans-serif", fontSize:14, display:"flex", flexDirection:"column" }}>
 
       {/* TOPBAR */}
-      <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, height:52, display:"flex", alignItems:"center", padding:"0 20px", gap:16, flexShrink:0, boxShadow:C.sh, position:"sticky", top:0, zIndex:50 }}>
+      <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, height:54, display:"flex", alignItems:"center", padding:"0 20px", gap:16, flexShrink:0, boxShadow:"0 1px 8px rgba(100,60,20,0.08)", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <div style={{ width:32, height:32, borderRadius:8, overflow:"hidden", background:"#f9f6f0", display:"flex", alignItems:"center", justifyContent:"center" }}>
             <img src={LOGO_SMALL} alt="M" style={{ width:30, height:30, objectFit:"contain" }}/>
@@ -1082,23 +1118,23 @@ export default function MaderERP() {
       <div style={{ display:"flex", flex:1, overflow:"hidden", height:"calc(100vh - 52px)" }}>
 
         {/* SIDEBAR */}
-        <div style={{ width: sidebarOpen ? 200 : (modActual === "pos" ? 0 : 52), background:C.white, borderRight: sidebarOpen || modActual !== "pos" ? `1px solid ${C.border}` : "none", padding: sidebarOpen ? "12px 8px" : modActual === "pos" ? "0" : "12px 6px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative", visibility: !sidebarOpen && modActual === "pos" ? "hidden" : "visible" }}>
+        <div style={{ width: sidebarOpen ? 210 : (modActual === "pos" ? 0 : 56), background:`linear-gradient(180deg, #3d2b1a 0%, #5c3d22 100%)`, borderRight:"none", padding: sidebarOpen ? "16px 10px" : modActual === "pos" ? "0" : "16px 8px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative", visibility: !sidebarOpen && modActual === "pos" ? "hidden" : "visible" }}>
           {/* Toggle collapse button */}
           <button onClick={() => setSidebarOpen(o => !o)}
-            style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"100%", padding:"6px 4px", marginBottom:10, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", color:C.t3, fontSize:14, flexShrink:0 }}
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"100%", padding:"7px 4px", marginBottom:12, borderRadius:8, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.08)", cursor:"pointer", color:"rgba(255,255,255,0.7)", fontSize:14, flexShrink:0 }}
             title={sidebarOpen ? "Colapsar menú" : "Expandir menú"}>
             {sidebarOpen ? "◀" : "▶"}
           </button>
           {(isAdmin || user.rol === "vendedor") && (
-            <button onClick={() => { setModal("venta"); }} style={{ width:"100%", padding:"9px", borderRadius:8, border:`1px solid ${C.ac}`, background:C.acBg, color:C.ac, fontSize:sidebarOpen?12:18, fontWeight:700, cursor:"pointer", fontFamily:"inherit", textAlign:"center", marginBottom:12, whiteSpace:"nowrap", overflow:"hidden" }}
+            <button onClick={() => { setModal("venta"); }} style={{ width:"100%", padding:"9px", borderRadius:8, border:"none", background:`linear-gradient(135deg, ${C.ac}, ${C.acD})`, color:"#fff", fontSize:sidebarOpen?12:18, fontWeight:700, cursor:"pointer", fontFamily:"inherit", textAlign:"center", marginBottom:12, whiteSpace:"nowrap", overflow:"hidden", boxShadow:"0 2px 8px rgba(100,50,10,0.3)" }}
               title="Nueva Venta">
               {sidebarOpen ? "🧾 + Nueva Venta" : "🧾"}
             </button>
           )}
-          {sidebarOpen && <div style={{ fontSize:10, color:C.t4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", padding:"0 8px", marginBottom:6 }}>Módulos</div>}
+          {sidebarOpen && <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.8px", padding:"0 8px", marginBottom:6 }}>Módulos</div>}
           {navItems.map(n => (
             <button key={n.id} onClick={() => setMod(n.id)} title={n.label}
-              style={{ width:"100%", padding: sidebarOpen?"8px 10px":"8px 4px", borderRadius:8, border:"none", background: modActual === n.id ? C.acBg : "transparent", color: modActual === n.id ? C.ac : C.t3, fontSize:12, fontWeight: modActual === n.id ? 700 : 400, cursor:"pointer", textAlign:sidebarOpen?"left":"center", fontFamily:"inherit", marginBottom:1, display:"flex", alignItems:"center", gap:sidebarOpen?8:0, justifyContent:sidebarOpen?"flex-start":"center", transition:"all 0.12s", overflow:"hidden" }}>
+              style={{ width:"100%", padding: sidebarOpen?"8px 12px":"8px 4px", borderRadius:8, border:"none", background: modActual === n.id ? "rgba(255,255,255,0.15)" : "transparent", color: modActual === n.id ? "#fff" : "rgba(255,255,255,0.55)", fontSize:12, fontWeight: modActual === n.id ? 700 : 400, cursor:"pointer", textAlign:sidebarOpen?"left":"center", fontFamily:"inherit", marginBottom:1, display:"flex", alignItems:"center", gap:sidebarOpen?8:0, justifyContent:sidebarOpen?"flex-start":"center", transition:"all 0.12s", overflow:"hidden", borderLeft: modActual === n.id ? `3px solid ${C.acL}` : "3px solid transparent" }}>
               <span style={{ fontSize:sidebarOpen?15:18, flexShrink:0 }}>{n.ico}</span>
               {sidebarOpen && <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{n.label}</span>}
               {sidebarOpen && (n.id === "ia" || n.id === "prediccion") && <span style={{ marginLeft:"auto", fontSize:9, background: n.id === "ia" ? C.ac : C.bl, color:"#fff", padding:"1px 5px", borderRadius:99, fontWeight:700 }}>IA</span>}
@@ -1116,7 +1152,7 @@ export default function MaderERP() {
         {/* BOTÓN FLOTANTE para mostrar sidebar cuando está oculta en POS */}
         {!sidebarOpen && modActual === "pos" && (
           <button onClick={() => setSidebarOpen(true)}
-            style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)", zIndex:100, background:C.white, border:`1px solid ${C.border}`, borderRadius:"0 8px 8px 0", padding:"12px 6px", cursor:"pointer", boxShadow:"2px 0 8px rgba(0,0,0,0.1)", color:C.t3, fontSize:14 }}
+            style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)", zIndex:100, background:"#3d2b1a", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"0 8px 8px 0", padding:"12px 6px", cursor:"pointer", boxShadow:"2px 0 8px rgba(0,0,0,0.2)", color:"rgba(255,255,255,0.7)", fontSize:14 }}
             title="Mostrar menú">
             ▶
           </button>
