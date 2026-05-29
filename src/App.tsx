@@ -1,3 +1,4 @@
+// MoblaMel ERP v45 - Build 2
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import * as XLSX_LIB from "xlsx";
 if (typeof window !== "undefined") { (window as any).XLSX = XLSX_LIB; }
@@ -3216,33 +3217,31 @@ export default function MaderERP() {
                   <UsuarioForm form={modal.form} onSave={guardarUser} onCancel={() => setModal(null)} icoset={ICOSET} roles={ROLES} todosModulos={TODOS_MODULOS} modulosPorRol={modulosPorRol}/>
                 </Modal>
               )}
-              {modal?.tipo === "cambiarPass" && (() => {
-                const [np, setNp] = useState("");
-                const [np2, setNp2] = useState("");
-                return (
-                  <Modal onClose={() => setModal(null)}>
-                    <ModalTitle>🔑 Cambiar contraseña · {modal.nombre}</ModalTitle>
-                    <Inp label="Nueva contraseña" type="password" value={np} onChange={e => setNp(e.target.value)} style={{ marginBottom:10 }}/>
-                    <Inp label="Confirmar contraseña" type="password" value={np2} onChange={e => setNp2(e.target.value)} style={{ marginBottom:16 }}/>
-                    <div style={{ display:"flex", gap:8 }}>
-                      <Btn variant="primary" full onClick={() => {
-                        if (!np) { showToast("Escribe la nueva contraseña", "err"); return; }
-                        if (np !== np2) { showToast("Las contraseñas no coinciden", "err"); return; }
-                        if (np.length < 4) { showToast("Mínimo 4 caracteres", "err"); return; }
-                        setUsuarios(us => us.map(u => {
-                          if (u.id !== modal.userId) return u;
-                          const nu = { ...u, pass: np };
-                          sbSave("usuarios", nu);
-                          return nu;
-                        }));
-                        showToast(`✓ Contraseña de ${modal.nombre} actualizada`);
-                        setModal(null);
-                      }}>Guardar</Btn>
-                      <Btn full onClick={() => setModal(null)}>Cancelar</Btn>
-                    </div>
-                  </Modal>
-                );
-              })()}
+              {modal?.tipo === "cambiarPass" && (
+                <Modal onClose={() => setModal(null)}>
+                  <ModalTitle>🔑 Cambiar contraseña · {modal.nombre}</ModalTitle>
+                  <Inp label="Nueva contraseña" type="password" id="np1" style={{ marginBottom:10 }}/>
+                  <Inp label="Confirmar contraseña" type="password" id="np2" style={{ marginBottom:16 }}/>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <Btn variant="primary" full onClick={() => {
+                      const np = (document.getElementById("np1") as HTMLInputElement)?.value || "";
+                      const np2 = (document.getElementById("np2") as HTMLInputElement)?.value || "";
+                      if (!np) { showToast("Escribe la nueva contraseña", "err"); return; }
+                      if (np !== np2) { showToast("Las contraseñas no coinciden", "err"); return; }
+                      if (np.length < 4) { showToast("Mínimo 4 caracteres", "err"); return; }
+                      setUsuarios(us => us.map(u => {
+                        if (u.id !== modal.userId) return u;
+                        const nu = { ...u, pass: np };
+                        sbSave("usuarios", nu);
+                        return nu;
+                      }));
+                      showToast(`✓ Contraseña de ${modal.nombre} actualizada`);
+                      setModal(null);
+                    }}>Guardar</Btn>
+                    <Btn full onClick={() => setModal(null)}>Cancelar</Btn>
+                  </div>
+                </Modal>
+              )}
             </>);
           })()}
 
