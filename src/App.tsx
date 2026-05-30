@@ -1,4 +1,4 @@
-// MoblaMel ERP v50 - Etiquetas ticketera, logo PWA mejorado, limpieza datos prueba, scroll móvil iOS
+// MoblaMel ERP v51 - Etiquetas 58mm rediseñadas, código de barras grande, logo PWA mejorado
 // PWA: Para activar el ícono en iPhone, agregar en public/index.html:
 // <link rel="apple-touch-icon" href="/logo192.png">
 // <meta name="apple-mobile-web-app-capable" content="yes">
@@ -432,7 +432,7 @@ export default function MaderERP() {
   const [etPrecio, setEtPrecio] = useState(true);
   const [etLogo, setEtLogo] = useState(true);
   const [etNombre, setEtNombre] = useState(true);
-  const [etTamaño, setEtTamaño] = useState("small");
+  const [etTamaño, setEtTamaño] = useState("ticket58");
 
   // Compras
   const [compraForm, setCompraForm] = useState(null);
@@ -3501,57 +3501,116 @@ export default function MaderERP() {
             const colsDisp = prodSel?.cols || [];
             const codeVal = prodSel ? (etCol ? `${prodSel.id}-${etCol.slice(0,3).toUpperCase()}` : prodSel.id) : "MOBLAMEL";
 
-            const genBars = (code) => {
-              let bars = "";
-              let x = 8;
-              const h = tam.barcodeH - 4;
+            // Genera barras Code-128 visual — más densas y nítidas para impresión térmica
+            const genBars = (code, totalW, totalH) => {
+              // Patrón determinista por caracter — barras más anchas para mayor legibilidad
+              const charWidths = [2,1,3,2,1,3,2,1,2,3,1,2,3,1,2,3,2,1,2,1];
+              let segs: {x:number,w:number}[] = [];
+              let x = 0;
+              // Barra de inicio
+              segs.push({x, w:3}); x+=4;
+              segs.push({x, w:1}); x+=3;
               for (let i = 0; i < code.length; i++) {
-                const charCode = code.charCodeAt(i);
-                const widths = [1,2,1,2,3,1,2,1,3,2,1,2,1,2,3];
-                for (let j = 0; j < 3; j++) {
-                  const w2 = widths[(charCode + j * 7) % widths.length];
-                  if ((charCode + j) % 2 === 0) {
-                    bars += `<rect x="${x}" y="4" width="${w2}" height="${h}" fill="#1a1a1a"/>`;
-                  }
-                  x += w2 + 1;
+                const c = code.charCodeAt(i);
+                for (let j = 0; j < 4; j++) {
+                  const bw = charWidths[(c * 3 + j * 7) % charWidths.length];
+                  if ((c + j) % 2 === 0) segs.push({x, w:bw});
+                  x += bw + 1;
                 }
               }
-              bars = `<rect x="4" y="4" width="2" height="${h}" fill="#1a1a1a"/><rect x="6" y="4" width="1" height="${h}" fill="#1a1a1a"/>` + bars + `<rect x="${x+2}" y="4" width="2" height="${h}" fill="#1a1a1a"/>`;
+              // Barra de fin
+              segs.push({x, w:3}); x+=4;
+              segs.push({x, w:1}); x+=2;
+              const totalBarsW = x;
+              const scaleX = (totalW - 8) / totalBarsW;
+              const bars = segs.map(s =>
+                `<rect x="${4 + s.x * scaleX}" y="0" width="${Math.max(1, s.w * scaleX)}" height="${totalH}" fill="#000"/>`
+              ).join("");
               return bars;
             };
 
             const renderEtiqueta = (_idx) => {
-              const w = tam.w;
-              const h = tam.h;
-              const fs = tam.fontSize;
-              const bh = tam.barcodeH;
-              const nombreCorto = prodSel ? prodSel.n.substring(0, 22) : "Producto";
+              const esTicket = tam.ticketera;
+              const nombreCorto = prodSel ? prodSel.n.substring(0, 26) : "Producto";
               const colLabel = etCol || (prodSel?.cols[0] || "");
               const precio = prodSel ? `S/ ${prodSel.p.toFixed(2)}` : "S/ 0.00";
-              const px = w * 3.78;
-              const py = h * 3.78;
 
-              // Calcular posiciones dinámicamente según lo que se muestra
-              let curY = etLogo ? 20 : 8;
-              const nombreY = curY + (etNombre ? 12 : 0);
-              const colorY = nombreY + (etNombre ? 10 : 0);
-              const barcodeY = colorY + 6;
+              if (esTicket) {
+                // ── DISEÑO TICKETERA 58mm ─────────────────────────────────────
+                // Ancho fijo 58mm = 219.24px @ 96dpi, usamos unidades mm directas
+                const W = 58; // mm
+                // Calcular altura dinámica según elementos activos
+                let lines: string[] = [];
+                if (etLogo)   lines.push("logo");
+                if (etNombre) lines.push("nombre", "color");
+                lines.push("barcode", "code");
+                if (etPrecio) lines.push("precio");
 
-              return `
-<svg width="${w}mm" height="${h}mm" viewBox="0 0 ${px} ${py}" xmlns="http://www.w3.org/2000/svg" style="display:block">
-  <rect width="${px}" height="${py}" fill="white" stroke="#ddd" stroke-width="0.5"/>
-  ${etLogo ? `<rect width="${px}" height="16" fill="#a0714f"/>
+                // SVG en mm para máxima precisión de impresión
+                const barcodeH = 18; // mm — código de barras grande
+                const lineH = 4;     // mm por línea de texto
+                let totalH = 4;      // margen top
+                if (etLogo)   totalH += 7;
+                if (etNombre) totalH += lineH * 2;
+                totalH += barcodeH + 2; // barcode
+                totalH += lineH;        // código texto
+                if (etPrecio) totalH += lineH + 1;
+                totalH += 3; // margen bottom
+
+                const px = W * 3.7795;    // mm → px (96dpi)
+                const py = totalH * 3.7795;
+
+                let y = 4;
+                let svgParts = `<rect width="${px}" height="${py}" fill="white"/>`;
+
+                if (etLogo) {
+                  svgParts += `<rect x="0" y="${y*3.7795}" width="${px}" height="${7*3.7795}" fill="#a0714f"/>`;
+                  svgParts += `<text x="${px/2}" y="${(y+5)*3.7795}" font-family="Georgia,serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle" letter-spacing="3">MOBLAMEL</text>`;
+                  y += 7 + 1;
+                }
+                if (etNombre) {
+                  svgParts += `<text x="${px/2}" y="${(y+lineH-1)*3.7795}" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#1a1a1a" text-anchor="middle">${nombreCorto}</text>`;
+                  y += lineH;
+                  svgParts += `<text x="${px/2}" y="${(y+lineH-1)*3.7795}" font-family="Arial,sans-serif" font-size="11" fill="#666" text-anchor="middle">${colLabel}</text>`;
+                  y += lineH;
+                }
+                // Código de barras — ocupa casi todo el ancho
+                const bY = y * 3.7795;
+                const bW = px - 8;
+                svgParts += `<g transform="translate(4, ${bY})">${genBars(codeVal, bW, barcodeH * 3.7795)}</g>`;
+                y += barcodeH + 2;
+                // Texto del código
+                svgParts += `<text x="${px/2}" y="${(y+lineH-1)*3.7795}" font-family="Courier New,monospace" font-size="11" fill="#333" text-anchor="middle" letter-spacing="1">${codeVal}</text>`;
+                y += lineH + 1;
+                if (etPrecio) {
+                  svgParts += `<rect x="4" y="${y*3.7795}" width="${px-8}" height="${lineH*3.7795}" rx="3" fill="#a0714f"/>`;
+                  svgParts += `<text x="${px/2}" y="${(y+lineH-0.8)*3.7795}" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">${precio}</text>`;
+                }
+
+                return `<svg width="${W}mm" height="${totalH}mm" viewBox="0 0 ${px} ${py}" xmlns="http://www.w3.org/2000/svg" style="display:block;max-width:100%">${svgParts}</svg>`;
+
+              } else {
+                // ── DISEÑO A4 ─────────────────────────────────────────────────
+                const w = tam.w; const h = tam.h; const fs = tam.fontSize; const bh = tam.barcodeH;
+                const px2 = w * 3.78; const py2 = h * 3.78;
+                let curY = etLogo ? 20 : 8;
+                const nombreY = curY + (etNombre ? 12 : 0);
+                const colorY = nombreY + (etNombre ? 10 : 0);
+                const barcodeY = colorY + 4;
+                return `
+<svg width="${w}mm" height="${h}mm" viewBox="0 0 ${px2} ${py2}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+  <rect width="${px2}" height="${py2}" fill="white" stroke="#ddd" stroke-width="0.5"/>
+  ${etLogo ? `<rect width="${px2}" height="16" fill="#a0714f"/>
   <text x="8" y="11" font-family="Georgia,serif" font-size="8" font-weight="bold" fill="white" letter-spacing="1">MOBLAMEL</text>
-  <circle cx="${px-12}" cy="8" r="4" fill="${HEX_COLOR[colLabel]||"#888"}" stroke="white" stroke-width="0.5"/>` : ""}
-  ${etNombre ? `<text x="${px/2}" y="${nombreY}" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="#2c2016" text-anchor="middle">${nombreCorto}</text>
-  <text x="${px/2}" y="${colorY}" font-family="Arial,sans-serif" font-size="${fs}" fill="#8a7560" text-anchor="middle">${colLabel}</text>` : ""}
-  <svg x="8" y="${barcodeY}" width="${px-16}" height="${bh}">
-    ${genBars(codeVal)}
-  </svg>
-  <text x="${px/2}" y="${barcodeY+bh+6}" font-family="Courier New,monospace" font-size="${fs-1}" fill="#5c4a38" text-anchor="middle">${codeVal}</text>
-  ${etPrecio ? `<rect x="${px-42}" y="${py-18}" width="38" height="14" rx="4" fill="#a0714f"/>
-  <text x="${px-23}" y="${py-8}" font-family="Arial,sans-serif" font-size="${fs+2}" font-weight="bold" fill="white" text-anchor="middle">${precio}</text>` : ""}
+  <circle cx="${px2-12}" cy="8" r="4" fill="${HEX_COLOR[colLabel]||"#888"}" stroke="white" stroke-width="0.5"/>` : ""}
+  ${etNombre ? `<text x="${px2/2}" y="${nombreY}" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="#2c2016" text-anchor="middle">${nombreCorto}</text>
+  <text x="${px2/2}" y="${colorY}" font-family="Arial,sans-serif" font-size="${fs}" fill="#8a7560" text-anchor="middle">${colLabel}</text>` : ""}
+  <g transform="translate(8, ${barcodeY})">${genBars(codeVal, px2-16, bh)}</g>
+  <text x="${px2/2}" y="${barcodeY+bh+6}" font-family="Courier New,monospace" font-size="${fs-1}" fill="#5c4a38" text-anchor="middle">${codeVal}</text>
+  ${etPrecio ? `<rect x="${px2-42}" y="${py2-18}" width="38" height="14" rx="4" fill="#a0714f"/>
+  <text x="${px2-23}" y="${py2-8}" font-family="Arial,sans-serif" font-size="${fs+2}" font-weight="bold" fill="white" text-anchor="middle">${precio}</text>` : ""}
 </svg>`;
+              }
             };
 
             const imprimirEtiquetas = () => {
