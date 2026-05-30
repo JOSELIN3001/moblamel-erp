@@ -1,4 +1,4 @@
-// MoblaMel ERP v49 - Contadores desde 00001, PWA, KPIs compactos, scroll móvil, etiquetas, sin datos ficticios
+// MoblaMel ERP v50 - Etiquetas ticketera, logo PWA mejorado, limpieza datos prueba, scroll móvil iOS
 // PWA: Para activar el ícono en iPhone, agregar en public/index.html:
 // <link rel="apple-touch-icon" href="/logo192.png">
 // <meta name="apple-mobile-web-app-capable" content="yes">
@@ -430,6 +430,8 @@ export default function MaderERP() {
   const [etCol, setEtCol] = useState("");
   const [etQty, setEtQty] = useState(1);
   const [etPrecio, setEtPrecio] = useState(true);
+  const [etLogo, setEtLogo] = useState(true);
+  const [etNombre, setEtNombre] = useState(true);
   const [etTamaño, setEtTamaño] = useState("small");
 
   // Compras
@@ -469,10 +471,23 @@ export default function MaderERP() {
 
   // ─── PWA META TAGS (iPhone home screen) ─────────────────────────────────
   useEffect(() => {
-    // apple-touch-icon
+    // apple-touch-icon — ícono cuadrado 180×180 con la M de MoblaMel bien encuadrada
+    const PWA_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <rect width="180" height="180" rx="40" fill="#a0714f"/>
+  <rect width="180" height="180" rx="40" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c4956a" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#5c3d22" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+  <text x="90" y="125" font-family="Georgia,serif" font-size="110" font-weight="bold" fill="white" text-anchor="middle" letter-spacing="-4">M</text>
+  <text x="90" y="158" font-family="Arial,sans-serif" font-size="18" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle" letter-spacing="3">MOBLAMEL</text>
+</svg>`;
+    const PWA_ICON_URL = "data:image/svg+xml;base64," + btoa(PWA_ICON_SVG);
     let link = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
     if (!link) { link = document.createElement("link") as HTMLLinkElement; link.rel = "apple-touch-icon"; document.head.appendChild(link); }
-    link.href = LOGO_MED;
+    link.href = PWA_ICON_URL;
     // theme-color
     let meta = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
     if (!meta) { meta = document.createElement("meta") as HTMLMetaElement; meta.name = "theme-color"; document.head.appendChild(meta); }
@@ -3261,9 +3276,40 @@ export default function MaderERP() {
               return nu;
             }));
             const ROL_COLOR = { admin:C.ac, vendedor:C.bl, taller:C.grL };
+
+            const limpiarDatosPrueba = async () => {
+              if (!window.confirm("⚠️ ¿Limpiar TODOS los datos de prueba?\n\nEsto borrará permanentemente:\n• Todas las ventas\n• Todos los gastos\n• Todo el kardex\n• Todos los clientes\n• Todas las cotizaciones\n• Todos los pedidos\n• Todas las compras\n\nLos productos e inventario NO se borran.\n\nEsta acción no se puede deshacer.")) return;
+              showToast("Limpiando datos...", "ok");
+              // Borrar de Supabase
+              const tablas = ["ventas","gastos","kardex","clientes","cotizaciones","compras","pedidos","cierres","traslados"];
+              await Promise.all(tablas.map(async (tabla) => {
+                const { error } = await (sb as any).from(tabla).delete().neq("id","__never__");
+                if (error) console.error(`Error limpiando ${tabla}:`, error);
+              }));
+              // Limpiar estado local
+              setVentas([]);
+              setGastos([]);
+              setKardex([]);
+              setClientes([]);
+              setCotizs([]);
+              setCompras([]);
+              setPedidos([]);
+              setCierres([]);
+              setTraslados([]);
+              showToast("✓ Datos de prueba eliminados correctamente");
+            };
+
             return (<>
               <PageTitle title="👤 Usuarios" sub={`${usuarios.length} usuarios · ${usuarios.filter(u=>u.activo).length} activos`}
-                action={<Btn variant="primary" onClick={() => setModal({ tipo:"nuevoUser", form:{ nombre:"", pass:"", rol:"vendedor", ico:"👧", modulos:modulosPorRol("vendedor") } })}>+ Nuevo Usuario</Btn>}/>
+                action={
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={limpiarDatosPrueba}
+                      style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${C.rdL}`, background:C.rdBg, color:C.rd, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      🗑️ Limpiar datos prueba
+                    </button>
+                    <Btn variant="primary" onClick={() => setModal({ tipo:"nuevoUser", form:{ nombre:"", pass:"", rol:"vendedor", ico:"👧", modulos:modulosPorRol("vendedor") } })}>+ Nuevo Usuario</Btn>
+                  </div>
+                }/>
               {/* Lista usuarios */}
               <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 {usuarios.map(u => {
@@ -3441,25 +3487,24 @@ export default function MaderERP() {
 
           {/* ═══════ ETIQUETAS ═══════ */}
           {modActual === "etiquetas" && (() => {
-            // Estado en componente padre (evita violación de hooks en IIFE)
             const prodSel = prods.find(p => p.id === etProd);
 
             const TAMAÑOS = {
-              small:  { w:62, h:38, fontSize:6,  barcodeH:16, cols:3, rows:7, label:"Pequeña (6×3.8cm) · 21 por hoja" },
-              medium: { w:74, h:52, fontSize:7,  barcodeH:22, cols:2, rows:5, label:"Mediana (7.4×5.2cm) · 10 por hoja" },
-              large:  { w:105,h:74, fontSize:9,  barcodeH:30, cols:1, rows:4, label:"Grande (10.5×7.4cm) · 4 por hoja" },
-            };
+              small:    { w:62,  h:38,  fontSize:6,  barcodeH:16, label:"Pequeña A4 (6×3.8cm) · 21/hoja",   ticketera:false },
+              medium:   { w:74,  h:52,  fontSize:7,  barcodeH:22, label:"Mediana A4 (7.4×5.2cm) · 10/hoja",  ticketera:false },
+              large:    { w:105, h:74,  fontSize:9,  barcodeH:30, label:"Grande A4 (10.5×7.4cm) · 4/hoja",   ticketera:false },
+              ticket58: { w:58,  h:40,  fontSize:7,  barcodeH:20, label:"🖨️ Ticketera 58mm",                  ticketera:true  },
+              ticket80: { w:80,  h:50,  fontSize:8,  barcodeH:24, label:"🖨️ Ticketera 80mm",                  ticketera:true  },
+            } as any;
             const tam = TAMAÑOS[etTamaño];
 
             const colsDisp = prodSel?.cols || [];
             const codeVal = prodSel ? (etCol ? `${prodSel.id}-${etCol.slice(0,3).toUpperCase()}` : prodSel.id) : "MOBLAMEL";
 
-            // Generar barras del código de barras (Code 128 simplificado visual)
             const genBars = (code) => {
               let bars = "";
               let x = 8;
               const h = tam.barcodeH - 4;
-              // Patrón visual pseudoaleatorio pero determinista basado en chars
               for (let i = 0; i < code.length; i++) {
                 const charCode = code.charCodeAt(i);
                 const widths = [1,2,1,2,3,1,2,1,3,2,1,2,1,2,3];
@@ -3471,12 +3516,11 @@ export default function MaderERP() {
                   x += w2 + 1;
                 }
               }
-              // Start/stop bars
               bars = `<rect x="4" y="4" width="2" height="${h}" fill="#1a1a1a"/><rect x="6" y="4" width="1" height="${h}" fill="#1a1a1a"/>` + bars + `<rect x="${x+2}" y="4" width="2" height="${h}" fill="#1a1a1a"/>`;
               return bars;
             };
 
-            const renderEtiqueta = (idx) => {
+            const renderEtiqueta = (_idx) => {
               const w = tam.w;
               const h = tam.h;
               const fs = tam.fontSize;
@@ -3484,38 +3528,65 @@ export default function MaderERP() {
               const nombreCorto = prodSel ? prodSel.n.substring(0, 22) : "Producto";
               const colLabel = etCol || (prodSel?.cols[0] || "");
               const precio = prodSel ? `S/ ${prodSel.p.toFixed(2)}` : "S/ 0.00";
+              const px = w * 3.78;
+              const py = h * 3.78;
+
+              // Calcular posiciones dinámicamente según lo que se muestra
+              let curY = etLogo ? 20 : 8;
+              const nombreY = curY + (etNombre ? 12 : 0);
+              const colorY = nombreY + (etNombre ? 10 : 0);
+              const barcodeY = colorY + 6;
 
               return `
-<svg width="${w}mm" height="${h}mm" viewBox="0 0 ${w*3.78} ${h*3.78}" xmlns="http://www.w3.org/2000/svg" style="display:block">
-  <!-- Fondo -->
-  <rect width="${w*3.78}" height="${h*3.78}" fill="white" stroke="#ddd" stroke-width="0.5"/>
-  <!-- Franja superior café -->
-  <rect width="${w*3.78}" height="14" fill="#a0714f"/>
-  <!-- Logo texto -->
-  <text x="8" y="10" font-family="Georgia,serif" font-size="8" font-weight="bold" fill="white" letter-spacing="1">MOBLAMEL</text>
-  <!-- Color dot -->
-  <circle cx="${w*3.78-12}" cy="7" r="4" fill="${HEX_COLOR[colLabel]||"#888"}" stroke="white" stroke-width="0.5"/>
-  <!-- Nombre producto -->
-  <text x="${w*3.78/2}" y="26" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="#2c2016" text-anchor="middle">${nombreCorto}</text>
-  <!-- Color -->
-  <text x="${w*3.78/2}" y="34" font-family="Arial,sans-serif" font-size="${fs}" fill="#8a7560" text-anchor="middle">${colLabel}</text>
-  <!-- Código de barras -->
-  <svg x="8" y="36" width="${w*3.78-16}" height="${bh}">
+<svg width="${w}mm" height="${h}mm" viewBox="0 0 ${px} ${py}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+  <rect width="${px}" height="${py}" fill="white" stroke="#ddd" stroke-width="0.5"/>
+  ${etLogo ? `<rect width="${px}" height="16" fill="#a0714f"/>
+  <text x="8" y="11" font-family="Georgia,serif" font-size="8" font-weight="bold" fill="white" letter-spacing="1">MOBLAMEL</text>
+  <circle cx="${px-12}" cy="8" r="4" fill="${HEX_COLOR[colLabel]||"#888"}" stroke="white" stroke-width="0.5"/>` : ""}
+  ${etNombre ? `<text x="${px/2}" y="${nombreY}" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="#2c2016" text-anchor="middle">${nombreCorto}</text>
+  <text x="${px/2}" y="${colorY}" font-family="Arial,sans-serif" font-size="${fs}" fill="#8a7560" text-anchor="middle">${colLabel}</text>` : ""}
+  <svg x="8" y="${barcodeY}" width="${px-16}" height="${bh}">
     ${genBars(codeVal)}
   </svg>
-  <!-- Código texto -->
-  <text x="${w*3.78/2}" y="${36+bh+6}" font-family="Courier New,monospace" font-size="${fs-1}" fill="#5c4a38" text-anchor="middle">${codeVal}</text>
-  ${etPrecio ? `<rect x="${w*3.78-38}" y="${h*3.78-16}" width="34" height="12" rx="4" fill="#a0714f"/>
-  <text x="${w*3.78-21}" y="${h*3.78-7}" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="white" text-anchor="middle">${precio}</text>` : ""}
+  <text x="${px/2}" y="${barcodeY+bh+6}" font-family="Courier New,monospace" font-size="${fs-1}" fill="#5c4a38" text-anchor="middle">${codeVal}</text>
+  ${etPrecio ? `<rect x="${px-42}" y="${py-18}" width="38" height="14" rx="4" fill="#a0714f"/>
+  <text x="${px-23}" y="${py-8}" font-family="Arial,sans-serif" font-size="${fs+2}" font-weight="bold" fill="white" text-anchor="middle">${precio}</text>` : ""}
 </svg>`;
             };
 
             const imprimirEtiquetas = () => {
               if (!prodSel) { alert("Selecciona un producto"); return; }
-              const etiquetas = Array.from({length: etQty}, (_, i) => renderEtiqueta(i)).join("\n");
+              const esTicketera = tam.ticketera;
               const ventana = window.open("", "_blank");
               if (!ventana) return;
-              ventana.document.write(`<!DOCTYPE html>
+              if (esTicketera) {
+                // Modo ticketera: lista vertical continua
+                const etqs = Array.from({length: etQty}, (_, i) => `<div class="etq">${renderEtiqueta(i)}</div>`).join("\n");
+                ventana.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Etiquetas MoblaMel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#fff; font-family:Arial,sans-serif; }
+  .etq { page-break-after:always; display:flex; justify-content:center; padding:2mm 0; }
+  .etq:last-child { page-break-after:avoid; }
+  @media print {
+    @page { margin:0; size:${etTamaño==="ticket58"?"58mm":"80mm"} auto; }
+    .no-print { display:none; }
+  }
+</style></head>
+<body>
+<div class="no-print" style="padding:12px;background:#f4f6f9;display:flex;gap:10px;align-items:center;border-bottom:1px solid #e2e6ed;position:sticky;top:0">
+  <strong>🖨️ ${etQty} etiqueta(s) · ${tam.label}</strong>
+  <button onclick="window.print()" style="padding:7px 14px;background:#a0714f;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">Imprimir</button>
+  <button onclick="window.close()" style="padding:7px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;cursor:pointer">Cerrar</button>
+</div>
+<div>${etqs}</div>
+<script>setTimeout(()=>{window.print();},400);<\/script>
+</body></html>`);
+              } else {
+                // Modo A4: grilla
+                const etqs = Array.from({length: etQty}, (_, i) => `<div class="etq">${renderEtiqueta(i)}</div>`).join("\n");
+                ventana.document.write(`<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Etiquetas MoblaMel</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -3524,37 +3595,49 @@ export default function MaderERP() {
   .etq { page-break-inside:avoid; }
   @media print {
     @page { margin:8mm; size:A4; }
-    body { margin:0; }
     .no-print { display:none; }
   }
 </style></head>
 <body>
-<div class="no-print" style="padding:16px;background:#f4f6f9;display:flex;gap:12px;align-items:center;border-bottom:1px solid #e2e6ed">
+<div class="no-print" style="padding:12px;background:#f4f6f9;display:flex;gap:10px;align-items:center;border-bottom:1px solid #e2e6ed">
   <strong>🏷️ ${etQty} etiqueta(s) de ${prodSel.n}${etCol?" · "+etCol:""}</strong>
-  <button onclick="window.print()" style="padding:8px 16px;background:#a0714f;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">🖨️ Imprimir</button>
-  <button onclick="window.close()" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;cursor:pointer">Cerrar</button>
+  <button onclick="window.print()" style="padding:7px 14px;background:#a0714f;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">🖨️ Imprimir</button>
+  <button onclick="window.close()" style="padding:7px 14px;background:#fff;border:1px solid #ccc;border-radius:6px;cursor:pointer">Cerrar</button>
 </div>
-<div class="grid">
-  ${Array.from({length: etQty}, (_, i) => `<div class="etq">${renderEtiqueta(i)}</div>`).join("\n")}
-</div>
+<div class="grid">${etqs}</div>
 <script>setTimeout(()=>{window.print();},400);<\/script>
 </body></html>`);
+              }
               ventana.document.close();
             };
 
+            // Toggle helper
+            const Toggle = ({ val, onToggle, label, sub }) => (
+              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:C.bg, borderRadius:8 }}>
+                <button onClick={onToggle}
+                  style={{ width:40, height:22, borderRadius:11, border:"none", background:val?C.grL:C.t4, cursor:"pointer", position:"relative", transition:"all 0.2s", flexShrink:0 }}>
+                  <div style={{ position:"absolute", top:2, left:val?20:2, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"all 0.2s" }}/>
+                </button>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{label}</div>
+                  {sub && <div style={{ fontSize:10, color:C.t4 }}>{sub}</div>}
+                </div>
+              </div>
+            );
+
             return (<>
-              <PageTitle title="🏷️ Etiquetas" sub="Genera e imprime etiquetas con código de barras en hoja A4"/>
+              <PageTitle title="🏷️ Etiquetas" sub="Genera etiquetas para hoja A4 o ticketera térmica"/>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:20 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap:20 }}>
 
-                {/* Panel izquierdo: configuración */}
+                {/* Panel izquierdo */}
                 <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
-                  {/* Selección de producto */}
+                  {/* Producto */}
                   <Card style={{ padding:18 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:14, textTransform:"uppercase", letterSpacing:"0.5px" }}>📦 Producto</div>
                     <div style={{ marginBottom:12 }}>
-                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>Buscar producto</label>
+                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>Seleccionar producto</label>
                       <select value={etProd} onChange={e => { setEtProd(e.target.value); setEtCol(""); }}
                         style={{ width:"100%", background:C.white, border:`2px solid ${etProd?C.ac:C.border}`, borderRadius:8, padding:"9px 12px", fontSize:13, outline:"none", fontFamily:"inherit", cursor:"pointer", color:C.t1, boxSizing:"border-box" }}>
                         <option value="">— Seleccionar producto —</option>
@@ -3562,12 +3645,12 @@ export default function MaderERP() {
                       </select>
                     </div>
                     {prodSel && (
-                      <div style={{ marginBottom:12 }}>
+                      <div>
                         <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.4px" }}>Color (opcional)</label>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                           <button onClick={() => setEtCol("")}
                             style={{ padding:"6px 12px", borderRadius:99, border:`2px solid ${etCol===""?C.ac:C.border}`, background:etCol===""?C.acBg:"transparent", color:etCol===""?C.ac:C.t3, fontSize:12, fontWeight:700, cursor:"pointer" }}>
-                            Todos los colores
+                            Todos
                           </button>
                           {prodSel.cols.map(col => (
                             <button key={col} onClick={() => setEtCol(col)}
@@ -3581,65 +3664,67 @@ export default function MaderERP() {
                     )}
                   </Card>
 
-                  {/* Cantidad y opciones */}
+                  {/* Tamaño */}
                   <Card style={{ padding:18 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:14, textTransform:"uppercase", letterSpacing:"0.5px" }}>⚙️ Opciones</div>
-                    <div style={{ marginBottom:16 }}>
-                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.4px" }}>Tamaño de etiqueta</label>
-                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                        {Object.entries(TAMAÑOS).map(([k, t]) => (
-                          <button key={k} onClick={() => setEtTamaño(k)}
-                            style={{ padding:"10px 14px", borderRadius:8, border:`2px solid ${etTamaño===k?C.ac:C.border}`, background:etTamaño===k?C.acBg:"transparent", cursor:"pointer", textAlign:"left" }}>
-                            <div style={{ fontSize:12, fontWeight:700, color:etTamaño===k?C.ac:C.t2 }}>
-                              {k==="small"?"Pequeña":k==="medium"?"Mediana":"Grande"}
-                            </div>
-                            <div style={{ fontSize:10, color:C.t4, marginTop:2 }}>{t.label}</div>
-                          </button>
-                        ))}
-                      </div>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:12, textTransform:"uppercase", letterSpacing:"0.5px" }}>📐 Tamaño / Formato</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {/* A4 */}
+                      <div style={{ fontSize:10, color:C.t4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", padding:"4px 0 2px" }}>Hoja A4</div>
+                      {(["small","medium","large"] as string[]).map(k => (
+                        <button key={k} onClick={() => setEtTamaño(k)}
+                          style={{ padding:"10px 14px", borderRadius:8, border:`2px solid ${etTamaño===k?C.ac:C.border}`, background:etTamaño===k?C.acBg:"transparent", cursor:"pointer", textAlign:"left" }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:etTamaño===k?C.ac:C.t2 }}>{k==="small"?"Pequeña":k==="medium"?"Mediana":"Grande"}</div>
+                          <div style={{ fontSize:10, color:C.t4, marginTop:2 }}>{TAMAÑOS[k].label}</div>
+                        </button>
+                      ))}
+                      {/* Ticketera */}
+                      <div style={{ fontSize:10, color:C.t4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.5px", padding:"8px 0 2px" }}>Ticketera térmica</div>
+                      {(["ticket58","ticket80"] as string[]).map(k => (
+                        <button key={k} onClick={() => setEtTamaño(k)}
+                          style={{ padding:"10px 14px", borderRadius:8, border:`2px solid ${etTamaño===k?C.ac:C.border}`, background:etTamaño===k?C.acBg:"transparent", cursor:"pointer", textAlign:"left" }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:etTamaño===k?C.ac:C.t2 }}>{k==="ticket58"?"58mm":"80mm"}</div>
+                          <div style={{ fontSize:10, color:C.t4, marginTop:2 }}>{TAMAÑOS[k].label}</div>
+                        </button>
+                      ))}
                     </div>
-                    <div style={{ marginBottom:14 }}>
-                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.4px" }}>Cantidad de etiquetas</label>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <button onClick={() => setEtQty(q => Math.max(1, q-1))}
-                          style={{ width:38, height:38, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, fontSize:20, fontWeight:700, cursor:"pointer" }}>−</button>
-                        <input type="number" min="1" max="100" value={etQty} onChange={e => setEtQty(Math.max(1, Math.min(100, parseInt(e.target.value)||1)))}
-                          style={{ flex:1, textAlign:"center", fontSize:22, fontWeight:800, background:C.white, border:`2px solid ${C.ac}`, borderRadius:8, padding:"6px", outline:"none", color:C.t1, fontFamily:"inherit" }}/>
-                        <button onClick={() => setEtQty(q => Math.min(100, q+1))}
-                          style={{ width:38, height:38, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, fontSize:20, fontWeight:700, cursor:"pointer" }}>+</button>
-                      </div>
-                      <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
-                        {[1,2,5,10,20,50].map(n => (
-                          <button key={n} onClick={() => setEtQty(n)}
-                            style={{ padding:"4px 10px", borderRadius:99, border:`1px solid ${etQty===n?C.ac:C.border}`, background:etQty===n?C.acBg:"transparent", fontSize:11, fontWeight:700, cursor:"pointer", color:etQty===n?C.ac:C.t3 }}>
-                            {n}
-                          </button>
-                        ))}
-                      </div>
+                  </Card>
+
+                  {/* Cantidad */}
+                  <Card style={{ padding:18 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:12, textTransform:"uppercase", letterSpacing:"0.5px" }}>🔢 Cantidad</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <button onClick={() => setEtQty(q => Math.max(1, q-1))}
+                        style={{ width:38, height:38, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, fontSize:20, fontWeight:700, cursor:"pointer" }}>−</button>
+                      <input type="number" min="1" max="200" value={etQty} onChange={e => setEtQty(Math.max(1, Math.min(200, parseInt(e.target.value)||1)))}
+                        style={{ flex:1, textAlign:"center", fontSize:22, fontWeight:800, background:C.white, border:`2px solid ${C.ac}`, borderRadius:8, padding:"6px", outline:"none", color:C.t1, fontFamily:"inherit" }}/>
+                      <button onClick={() => setEtQty(q => Math.min(200, q+1))}
+                        style={{ width:38, height:38, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, fontSize:20, fontWeight:700, cursor:"pointer" }}>+</button>
                     </div>
-                    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:C.bg, borderRadius:8 }}>
-                      <button onClick={() => setEtPrecio(p => !p)}
-                        style={{ width:40, height:22, borderRadius:11, border:"none", background:etPrecio?C.grL:C.t4, cursor:"pointer", position:"relative", transition:"all 0.2s", flexShrink:0 }}>
-                        <div style={{ position:"absolute", top:2, left:etPrecio?20:2, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"all 0.2s" }}/>
-                      </button>
-                      <div>
-                        <div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>Mostrar precio</div>
-                        <div style={{ fontSize:10, color:C.t4 }}>Incluye el precio de venta en la etiqueta</div>
-                      </div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {[1,2,5,10,20,50,100].map(n => (
+                        <button key={n} onClick={() => setEtQty(n)}
+                          style={{ padding:"4px 10px", borderRadius:99, border:`1px solid ${etQty===n?C.ac:C.border}`, background:etQty===n?C.acBg:"transparent", fontSize:11, fontWeight:700, cursor:"pointer", color:etQty===n?C.ac:C.t3 }}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </Card>
+
+                  {/* Opciones de contenido */}
+                  <Card style={{ padding:18 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:12, textTransform:"uppercase", letterSpacing:"0.5px" }}>⚙️ Contenido de la etiqueta</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      <Toggle val={etLogo}   onToggle={() => setEtLogo(v=>!v)}   label="Logo MOBLAMEL" sub="Franja café con el nombre de la marca"/>
+                      <Toggle val={etNombre} onToggle={() => setEtNombre(v=>!v)} label="Nombre del producto" sub="Muestra el nombre y color del mueble"/>
+                      <Toggle val={etPrecio} onToggle={() => setEtPrecio(v=>!v)} label="Precio de venta" sub={`Muestra S/ ${prodSel?prodSel.p.toFixed(2):"—"} en la etiqueta`}/>
                     </div>
                   </Card>
 
                   {/* Botón imprimir */}
                   <button onClick={imprimirEtiquetas} disabled={!prodSel}
-                    style={{ padding:"16px", borderRadius:12, border:"none", background:prodSel?"linear-gradient(135deg,#a0714f,#7d5538)":"#e2e6ed", color:prodSel?"#fff":"#a0aec0", fontSize:16, fontWeight:800, cursor:prodSel?"pointer":"not-allowed", fontFamily:"inherit", boxShadow:prodSel?"0 4px 16px rgba(100,60,20,0.3)":"none", letterSpacing:"0.3px" }}>
-                    🖨️ Generar e Imprimir {etQty} Etiqueta{etQty!==1?"s":""}
+                    style={{ padding:"16px", borderRadius:12, border:"none", background:prodSel?"linear-gradient(135deg,#a0714f,#7d5538)":"#e2e6ed", color:prodSel?"#fff":"#a0aec0", fontSize:16, fontWeight:800, cursor:prodSel?"pointer":"not-allowed", fontFamily:"inherit", boxShadow:prodSel?"0 4px 16px rgba(100,60,20,0.3)":"none" }}>
+                    🖨️ Generar e Imprimir {etQty} Etiqueta{etQty!==1?"s":""} {tam.ticketera?"(Ticketera)":"(A4)"}
                   </button>
-
-                  {!prodSel && (
-                    <div style={{ textAlign:"center", fontSize:12, color:C.t4, fontStyle:"italic" }}>
-                      Selecciona un producto para generar etiquetas
-                    </div>
-                  )}
                 </div>
 
                 {/* Panel derecho: previsualización */}
@@ -3648,17 +3733,19 @@ export default function MaderERP() {
                     <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:14, textTransform:"uppercase", letterSpacing:"0.5px" }}>👁️ Previsualización</div>
                     {prodSel ? (
                       <>
-                        <div style={{ background:"#f4f6f9", borderRadius:10, padding:16, display:"flex", justifyContent:"center", alignItems:"center", minHeight:200, marginBottom:12 }}
+                        <div style={{ background:"#f4f6f9", borderRadius:10, padding:16, display:"flex", justifyContent:"center", alignItems:"center", minHeight:160, marginBottom:12, overflow:"hidden" }}
                           dangerouslySetInnerHTML={{ __html: renderEtiqueta(0) }}/>
-                        <div style={{ fontSize:11, color:C.t4, textAlign:"center", marginBottom:12 }}>
-                          Vista previa 1:{etTamaño==="small"?"1":etTamaño==="medium"?"0.8":"0.6"} — La impresión es más precisa
+                        <div style={{ fontSize:10, color:C.t4, textAlign:"center", marginBottom:12 }}>
+                          {tam.ticketera ? "Vista previa ticketera — escala aproximada" : "Vista previa A4 — la impresión es más precisa"}
                         </div>
                         <div style={{ background:C.acBg, borderRadius:8, padding:"10px 12px", fontSize:11, color:C.t2 }}>
-                          <div style={{ fontWeight:700, color:C.ac, marginBottom:4 }}>📋 Resumen</div>
+                          <div style={{ fontWeight:700, color:C.ac, marginBottom:6 }}>📋 Resumen</div>
                           <div>Producto: <strong>{prodSel.n}</strong></div>
                           {etCol && <div>Color: <strong>{etCol}</strong></div>}
                           <div>Cantidad: <strong>{etQty} etiqueta{etQty!==1?"s":""}</strong></div>
-                          <div>Tamaño: <strong>{TAMAÑOS[etTamaño].label.split("·")[0].trim()}</strong></div>
+                          <div>Formato: <strong>{TAMAÑOS[etTamaño].label.split("·")[0].trim()}</strong></div>
+                          <div>Logo: <strong>{etLogo?"Incluido":"Oculto"}</strong></div>
+                          <div>Nombre: <strong>{etNombre?"Incluido":"Oculto"}</strong></div>
                           <div>Precio: <strong>{etPrecio?"Incluido":"Oculto"}</strong></div>
                         </div>
                       </>
@@ -3673,6 +3760,7 @@ export default function MaderERP() {
               </div>
             </>);
           })()}
+
 
           {/* ═══════ VENDEDORES ═══════ */}
           {modActual === "vendedores" && (() => {
