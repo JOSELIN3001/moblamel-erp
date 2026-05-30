@@ -1,4 +1,10 @@
-// MoblaMel ERP v48 - Diseño cálido moderno, login rediseñado, sidebar oscura
+// MoblaMel ERP v49 - Contadores desde 00001, PWA, KPIs compactos, scroll móvil, etiquetas, sin datos ficticios
+// PWA: Para activar el ícono en iPhone, agregar en public/index.html:
+// <link rel="apple-touch-icon" href="/logo192.png">
+// <meta name="apple-mobile-web-app-capable" content="yes">
+// <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+// <meta name="apple-mobile-web-app-title" content="MoblaMel">
+// <meta name="theme-color" content="#a0714f"> - Contadores desde 00001, PWA, KPIs compactos, scroll móvil, etiquetas, sin datos ficticios
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import * as XLSX_LIB from "xlsx";
 if (typeof window !== "undefined") { (window as any).XLSX = XLSX_LIB; }
@@ -139,6 +145,7 @@ const TODOS_MODULOS = [
   { id:"prediccion", label:"🔮 Predicción",       roles:["admin"] },
   { id:"usuarios",   label:"👤 Usuarios",         roles:["admin"] },
   { id:"ia",         label:"🤖 Asistente IA",     roles:["admin"] },
+  { id:"etiquetas",  label:"🏷️ Etiquetas",       roles:["admin"] },
 ];
 
 // Módulos por defecto según rol
@@ -146,9 +153,9 @@ const modulosPorRol = (rol) => TODOS_MODULOS.filter(m => m.roles.includes(rol)).
 
 // ─── USUARIOS (mutable via estado) ───────────────────────────────────────────
 const USUARIOS_INIT = [
-  { id:"U000", nombre:"Admin",    rol:"admin",    cel:"",          ico:"👑", activo:true, pass:"011207", sueldoSemanal:0, modulos:["dashboard","pos","ventas","caja","pedidos","traslados","vendedores","clientes","cotiz","inventario","kardex","produccion","compras","gastos","finanzas","abc","prediccion","usuarios","ia"] },
-  { id:"U001", nombre:"Adolfo",   rol:"admin",    cel:"998649169", ico:"👨‍💼", activo:true, pass:"1234",   sueldoSemanal:0, modulos:["dashboard","pos","ventas","caja","pedidos","traslados","vendedores","clientes","cotiz","inventario","kardex","produccion","compras","gastos","finanzas","abc","prediccion","usuarios","ia"] },
-  { id:"U002", nombre:"Joselin",  rol:"admin",    cel:"907569211", ico:"👩‍💼", activo:true, pass:"1234",   sueldoSemanal:0, modulos:["dashboard","pos","ventas","caja","pedidos","traslados","vendedores","clientes","cotiz","inventario","kardex","produccion","compras","gastos","finanzas","abc","prediccion","usuarios","ia"] },
+  { id:"U000", nombre:"Admin",    rol:"admin",    cel:"",          ico:"👑", activo:true, pass:"011207", sueldoSemanal:0, modulos:["dashboard","pos","ventas","caja","pedidos","traslados","vendedores","clientes","cotiz","inventario","kardex","produccion","compras","gastos","finanzas","abc","prediccion","usuarios","ia","etiquetas"] },
+  { id:"U001", nombre:"Adolfo",   rol:"admin",    cel:"998649169", ico:"👨‍💼", activo:true, pass:"1234",   sueldoSemanal:0, modulos:["dashboard","pos","ventas","caja","pedidos","traslados","vendedores","clientes","cotiz","inventario","kardex","produccion","compras","gastos","finanzas","abc","prediccion","usuarios","ia","etiquetas"] },
+  { id:"U002", nombre:"Joselin",  rol:"admin",    cel:"907569211", ico:"👩‍💼", activo:true, pass:"1234",   sueldoSemanal:0, modulos:["dashboard","pos","ventas","caja","pedidos","traslados","vendedores","clientes","cotiz","inventario","kardex","produccion","compras","gastos","finanzas","abc","prediccion","usuarios","ia","etiquetas"] },
   { id:"U003", nombre:"Rosa",     rol:"vendedor", cel:"985568624", ico:"🌸", activo:true,  pass:"1234",   sueldoSemanal:300, modulos:["pos","ventas","caja","pedidos","clientes","cotiz","inventario"] },
   { id:"U004", nombre:"Maricielo",rol:"vendedor", cel:"914727793", ico:"💐", activo:true,  pass:"1234",   sueldoSemanal:300, modulos:["pos","ventas","caja","pedidos","clientes","cotiz","inventario"] },
   { id:"U005", nombre:"Mia",      rol:"vendedor", cel:"",          ico:"🌺", activo:true,  pass:"1234",   sueldoSemanal:300, modulos:["pos","ventas","caja","pedidos","clientes","cotiz","inventario"] },
@@ -197,118 +204,25 @@ const trasladarStk = (p, qty, de, a, col) => {
 };
 
 // ─── DATOS INICIALES ─────────────────────────────────────────────────────────
-const PRODS_INIT = [
-  {id:"P001",n:"Ropero 2 Puertas Económico", cat:"Ropero", tipo:"Fabricado",img:"",barcode:"",ico:"🪞",cols:["Blanco","Nogal","Wengué"],
-    locs:{"Tienda Principal|Blanco":2,"Tienda Principal|Nogal":1,"Tienda Principal|Wengué":1,"Taller/Almacén|Blanco":1,"Taller/Almacén|Nogal":1},
-    stk:6,min:3,p:300,c:220,ubi:"Tienda Principal",v:[12,15,18,14,20,22,19,25,21,17,23,24]},
-  {id:"P002",n:"Ropero 3P con Espejo",  cat:"Ropero",      tipo:"Fabricado",img:"",barcode:"",ico:"🪞",cols:["Blanco","Nogal"],
-    locs:{"Tienda Pasaje|Blanco":1,"Tienda Pasaje|Nogal":1,"Taller/Almacén|Blanco":1},
-    stk:3,min:3,p:680,c:310,ubi:"Tienda Pasaje",v:[8,10,9,12,11,14,10,13,15,12,14,16]},
-  {id:"P003",n:"Ropero 4P Lujo",        cat:"Ropero",      tipo:"Comprado", img:"",barcode:"",ico:"🪞",cols:["Blanco","Cerezo"],
-    locs:{"Tienda Principal|Blanco":1,"Tienda Principal|Cerezo":1},
-    stk:2,min:2,p:950,c:600,ubi:"Tienda Principal",v:[3,4,3,5,4,6,4,5,6,4,5,7]},
-  {id:"P004",n:"Zapatero 12 Pares",     cat:"Zapatero",    tipo:"Fabricado",img:"",barcode:"",ico:"👟",cols:["Blanco","Nogal"],
-    locs:{"Tienda Principal|Blanco":2,"Tienda Principal|Nogal":1,"Tienda Pasaje|Blanco":2,"Tienda Pasaje|Nogal":2,"Taller/Almacén|Blanco":2,"Taller/Almacén|Nogal":1},
-    stk:10,min:4,p:185,c:80,ubi:"Tienda Pasaje",v:[20,22,25,28,24,30,26,32,28,25,29,33]},
-  {id:"P005",n:"Zapatero 24 Pares",     cat:"Zapatero",    tipo:"Fabricado",img:"",barcode:"",ico:"👟",cols:["Blanco","Nogal"],
-    locs:{"Tienda Pasaje|Blanco":1,"Tienda Pasaje|Nogal":1,"Taller/Almacén|Blanco":2,"Taller/Almacén|Nogal":1},
-    stk:5,min:3,p:270,c:120,ubi:"Taller/Almacén",v:[10,12,11,14,12,15,13,16,14,12,15,17]},
-  {id:"P006",n:"Cómoda 5 Cajones",      cat:"Cómoda",      tipo:"Fabricado",img:"",barcode:"",ico:"🗄️",cols:["Blanco","Nogal","Wengué"],
-    locs:{"Tienda Principal|Blanco":1,"Tienda Principal|Nogal":1,"Tienda Pasaje|Wengué":1,"Taller/Almacén|Blanco":1},
-    stk:4,min:3,p:390,c:190,ubi:"Tienda Principal",v:[15,17,16,19,18,21,17,22,20,18,21,23]},
-  {id:"P007",n:"Cómoda 3 Cajones",      cat:"Cómoda",      tipo:"Comprado", img:"",barcode:"",ico:"🗄️",cols:["Blanco","Nogal"],
-    locs:{"Tienda Principal|Blanco":2,"Tienda Principal|Nogal":2,"Tienda Pasaje|Blanco":1,"Tienda Pasaje|Nogal":1,"Taller/Almacén|Blanco":1,"Taller/Almacén|Nogal":1},
-    stk:8,min:2,p:250,c:155,ubi:"Tienda Pasaje",v:[2,1,3,2,1,2,1,2,2,1,2,1]},
-  {id:"P008",n:"Mesa de Noche Simple",  cat:"Mesa de Noche",tipo:"Fabricado",img:"",barcode:"",ico:"🛏️",cols:["Blanco","Nogal"],
-    locs:{"Tienda Principal|Blanco":3,"Tienda Principal|Nogal":3,"Tienda Pasaje|Blanco":2,"Tienda Pasaje|Nogal":1,"Taller/Almacén|Blanco":2,"Taller/Almacén|Nogal":1},
-    stk:12,min:5,p:98,c:40,ubi:"Tienda Principal",v:[30,35,32,38,36,40,35,42,38,34,39,43]},
-  {id:"P009",n:"Mesa Noche con Cajón",  cat:"Mesa de Noche",tipo:"Fabricado",img:"",barcode:"",ico:"🛏️",cols:["Blanco","Nogal","Cerezo"],
-    locs:{"Tienda Principal|Blanco":1,"Tienda Principal|Nogal":1,"Tienda Pasaje|Cerezo":1,"Taller/Almacén|Blanco":2,"Taller/Almacén|Nogal":1},
-    stk:6,min:4,p:135,c:60,ubi:"Taller/Almacén",v:[18,20,19,22,21,24,20,25,23,20,24,26]},
-  {id:"P010",n:"Cabecera Tapizada 2P",  cat:"Cabecera",    tipo:"Comprado", img:"",barcode:"",ico:"🛋️",cols:["Gris","Beige"],
-    locs:{"Tienda Principal|Gris":1,"Tienda Pasaje|Gris":1,"Tienda Pasaje|Beige":1,"Taller/Almacén|Beige":1},
-    stk:4,min:3,p:330,c:210,ubi:"Tienda Pasaje",v:[8,9,8,10,9,11,9,12,10,9,11,12]},
-];
+const PRODS_INIT = [];
 
-const VENTAS_INIT = [
-  {id:"V001",f:"2025-05-05",cli:"Juan Quispe",  vend:"Rosa",      items:[{id:"P001",n:"Ropero 2 Puertas",     col:"Blanco",q:1,p:480,c:220}],tot:480, mp:"Efectivo",     comp:"Boleta", num:"B001-00021"},
-  {id:"V002",f:"2025-05-08",cli:"Rosa Mamani",  vend:"Adolfo",      items:[{id:"P004",n:"Zapatero 12 Pares",    col:"Nogal", q:2,p:185,c:80}], tot:350, mp:"Yape",         comp:"Boleta", num:"B001-00022"},
-  {id:"V003",f:"2025-05-12",cli:"Carlos Flores",vend:"Joselin",     items:[{id:"P008",n:"Mesa Noche Simple",    col:"Blanco",q:2,p:98, c:40},{id:"P006",n:"Cómoda 5 Cajones",col:"Nogal",q:1,p:390,c:190}],tot:615,mp:"POS Tarjeta",comp:"Factura",num:"F001-00001"},
-  {id:"V004",f:"2025-05-15",cli:"Lucía Torres", vend:"Rosa",      items:[{id:"P002",n:"Ropero 3P con Espejo", col:"Blanco",q:1,p:680,c:310}],tot:650, mp:"Trans. BCP",    comp:"Boleta", num:"B001-00023"},
-  {id:"V005",f:"2025-05-19",cli:"Pedro Condori",vend:"Joselin",     items:[{id:"P009",n:"Mesa Noche con Cajón", col:"Cerezo",q:2,p:135,c:60}], tot:270, mp:"Yape",         comp:"Boleta", num:"B001-00024"},
-  {id:"V006",f:"2025-05-21",cli:"Ana Huanca",   vend:"Maricielo", items:[{id:"P004",n:"Zapatero 12 Pares",    col:"Blanco",q:1,p:185,c:80}], tot:185, mp:"Efectivo",     comp:"Boleta", num:"B001-00025"},
-];
+const VENTAS_INIT = [];
 
-const GASTOS_INIT = [
-  // ── GASTOS FIJOS ──────────────────────────────────────────────────────────
-  {id:"G001",f:"2025-05-01",cat:"Alquiler",      esFijo:true,  desc:"Alquiler Tienda Principal · mayo", prov:"",               monto:1700},
-  {id:"G002",f:"2025-05-01",cat:"Alquiler",      esFijo:true,  desc:"Alquiler Tienda Pasaje · mayo",    prov:"",               monto:2000},
-  {id:"G003",f:"2025-05-01",cat:"Servicios taller", esFijo:true, desc:"Luz y agua taller · mayo",      prov:"",               monto:120},
-  {id:"G004",f:"2025-05-05",cat:"Sueldo base",   esFijo:true,  desc:"Sueldo base Rosa · semana 1",     vendedor:"Rosa",     prov:"",               monto:300},
-  {id:"G005",f:"2025-05-05",cat:"Sueldo base",   esFijo:true,  desc:"Sueldo base Adolfo · semana 1",   vendedor:"Adolfo",     prov:"",               monto:280},
-  {id:"G006",f:"2025-05-05",cat:"Sueldo base",   esFijo:true,  desc:"Sueldo base Maricielo · semana 1",vendedor:"Maricielo",prov:"",               monto:260},
-  {id:"G007",f:"2025-05-12",cat:"Sueldo base",   esFijo:true,  desc:"Sueldo base Rosa · semana 2",     vendedor:"Rosa",     prov:"",               monto:300},
-  {id:"G008",f:"2025-05-12",cat:"Sueldo base",   esFijo:true,  desc:"Sueldo base Adolfo · semana 2",   vendedor:"Adolfo",     prov:"",               monto:280},
-  {id:"G009",f:"2025-05-12",cat:"Sueldo base",   esFijo:true,  desc:"Sueldo base Maricielo · semana 2",vendedor:"Maricielo",prov:"",               monto:260},
-  // ── GASTOS VARIABLES ─────────────────────────────────────────────────────
-  {id:"G010",f:"2025-05-03",cat:"Materiales",    esFijo:false, desc:"Planchas melamina 18mm x20",       prov:"Maderco SAC",    monto:1200},
-  {id:"G011",f:"2025-05-08",cat:"Armador por obra",esFijo:false,desc:"Armado lote roperos mayo",        prov:"Luis Quispe",    monto:450},
-  {id:"G012",f:"2025-05-15",cat:"Materiales",    esFijo:false, desc:"Jaladores y bisagras x50",         prov:"Ferretería VES", monto:180},
-  {id:"G013",f:"2025-05-20",cat:"Comisión",      esFijo:false, desc:"Comisión Rosa · ventas sem 3",    vendedor:"Rosa",     prov:"",               monto:96},
-  {id:"G014",f:"2025-05-20",cat:"Comisión",      esFijo:false, desc:"Comisión Adolfo · ventas sem 3",  vendedor:"Adolfo",     prov:"",               monto:72},
-  {id:"G015",f:"2025-05-22",cat:"Mantenimiento", esFijo:false, desc:"Afilado sierras y mantenimiento",  prov:"Taller técnico", monto:85},
-];
+const GASTOS_INIT = [];
 
-const KARDEX_INIT = [
-  {id:"K001",f:"2025-05-01",pid:"P001",prod:"Ropero 2 Puertas",    col:"Blanco",tipo:"Fabricación",desc:"Lote fabricación",   ent:5,sal:0,saldo:11,costo:220},
-  {id:"K002",f:"2025-05-05",pid:"P001",prod:"Ropero 2 Puertas",    col:"Blanco",tipo:"Venta",      desc:"Venta B001-00021",  ent:0,sal:1,saldo:10,costo:220},
-  {id:"K003",f:"2025-05-08",pid:"P004",prod:"Zapatero 12 Pares",   col:"Nogal", tipo:"Fabricación",desc:"Lote fabricación",   ent:8,sal:0,saldo:18,costo:80},
-  {id:"K004",f:"2025-05-08",pid:"P004",prod:"Zapatero 12 Pares",   col:"Nogal", tipo:"Venta",      desc:"Venta B001-00022",  ent:0,sal:2,saldo:16,costo:80},
-  {id:"K005",f:"2025-05-12",pid:"P008",prod:"Mesa Noche Simple",   col:"Blanco",tipo:"Venta",      desc:"Venta F001-00001",  ent:0,sal:2,saldo:14,costo:40},
-  {id:"K006",f:"2025-05-12",pid:"P006",prod:"Cómoda 5 Cajones",    col:"Nogal", tipo:"Venta",      desc:"Venta F001-00001",  ent:0,sal:1,saldo:5, costo:190},
-  {id:"K007",f:"2025-05-15",pid:"P003",prod:"Ropero 4P Lujo",      col:"Blanco",tipo:"Compra",     desc:"Compra proveedor",  ent:3,sal:0,saldo:5, costo:600},
-  {id:"K008",f:"2025-05-15",pid:"P002",prod:"Ropero 3P con Espejo",col:"Blanco",tipo:"Venta",      desc:"Venta B001-00023",  ent:0,sal:1,saldo:4, costo:310},
-];
+const KARDEX_INIT = [];
 
-const LOTES_INIT = [
-  {id:"L001",f:"2025-05-01",pid:"P001",prod:"Ropero 2 Puertas",   qty:5,costo:220,total:1100,estado:"Completado"},
-  {id:"L002",f:"2025-05-08",pid:"P004",prod:"Zapatero 12 Pares",  qty:8,costo:80, total:640, estado:"Completado"},
-  {id:"L003",f:"2025-05-15",pid:"P006",prod:"Cómoda 5 Cajones",   qty:4,costo:190,total:760, estado:"En proceso"},
-];
+const LOTES_INIT = [];
 
-const CLIENTES_INIT = [
-  {id:"C001",nombre:"Juan Quispe",  cel:"987654321",dir:"Ate Vitarte",    notas:"Prefiere roperos nogal",  vip:false},
-  {id:"C002",nombre:"Rosa Mamani",  cel:"912345678",dir:"San Juan de Lurigancho",notas:"",               vip:false},
-  {id:"C003",nombre:"Carlos Flores",cel:"956123456",dir:"Miraflores",     notas:"Cliente corporativo",    vip:true },
-  {id:"C004",nombre:"Lucía Torres", cel:"934567890",dir:"San Borja",      notas:"Interesada en dormitorio completo", vip:false},
-  {id:"C005",nombre:"Pedro Condori",cel:"967890123",dir:"Villa El Salvador",notas:"",                    vip:false},
-  {id:"C006",nombre:"Ana Huanca",   cel:"945678901",dir:"Chorrillos",     notas:"",                      vip:false},
-];
+const CLIENTES_INIT = [];
 
-const COTIZ_INIT = [
-  {id:"Q001",f:"2025-05-10",cli:"Lucía Torres",cel:"934567890",vend:"Rosa",items:[{id:"P001",n:"Ropero 2 Puertas",barcode:"",ico:"🪞",col:"Blanco",q:1,p:480}],tot:480,est:"Pendiente",nota:"Quiere entrega en 1 semana"},
-  {id:"Q002",f:"2025-05-14",cli:"Marco Ríos",  cel:"923456789",vend:"Adolfo",items:[{id:"P006",n:"Cómoda 5 Cajones",barcode:"",ico:"🗄️",col:"Nogal",q:2,p:390},{id:"P008",n:"Mesa de Noche Simple",barcode:"",ico:"🛏️",col:"Nogal",q:2,p:98}],tot:976,est:"Vista",nota:"Pidió descuento, pendiente confirmar"},
-  {id:"Q003",f:"2025-05-18",cli:"Sara Mejía",  cel:"978901234",vend:"Mia",items:[{id:"P003",n:"Ropero 4P Lujo",barcode:"",ico:"🪞",col:"Cerezo",q:1,p:950}],tot:950,est:"Aceptada",nota:""},
-];
+const COTIZ_INIT = [];
 
-const COMPRAS_INIT = [
-  {id:"CM001",f:"2025-05-03",prov:"Maderco SAC",      pid:"P001",prod:"Ropero 2 Puertas",    col:"Blanco",qty:5,  cu:210, total:1050,nota:"Lote melamina importada"},
-  {id:"CM002",f:"2025-05-15",prov:"Muebles Lima Import",pid:"P003",prod:"Ropero 4P Lujo",   col:"Blanco",qty:3,  cu:595, total:1785,nota:"Stock navideño"},
-  {id:"CM003",f:"2025-05-20",prov:"Cabeceras Perú",   pid:"P010",prod:"Cabecera Tapizada 2P",col:"Gris",  qty:2,  cu:205, total:410, nota:""},
-];
+const COMPRAS_INIT = [];
 
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-const PEDIDOS_INIT = [
-  { id:"PD001", f:"2025-05-10", tipo:"separacion", cli:"Lucía Torres", cel:"934567890", vend:"Rosa",
-    pid:"P001", prod:"Ropero 2 Puertas", col:"Blanco", qty:1, precioAcordado:480,
-    adelanto:200, abonos:[], saldoPendiente:280, est:"Pendiente entrega",
-    fEnt:"2025-05-25", nota:"Cliente viene el sábado a recoger", diasAlerta:30 },
-  { id:"PD002", f:"2025-05-15", tipo:"medida", cli:"Marco Ríos", cel:"923456789", vend:"Adolfo",
-    pid:"", prod:"Ropero 3P Cerezo especial 2.20m", col:"Cerezo", qty:1, precioAcordado:780,
-    adelanto:300, abonos:[], saldoPendiente:480, est:"En producción",
-    fEnt:"2025-06-05", nota:"Medida especial 2.20m alto, color cerezo oscuro", diasAlerta:30 },
-];
+const PEDIDOS_INIT = [];
 const CAT_C = {Ropero:"#e07b39",Zapatero:"#2b6cb0","Cómoda":"#6b46c1","Mesa de Noche":"#276749",Cabecera:"#c53030"};
 const HEX_COLOR = {Blanco:"#f5f0e8",Nogal:"#7c5230","Wengué":"#2e1a0e",Cerezo:"#8b2020",Gris:"#7a7a7a",Beige:"#c8a87a"};
 const METODOS_PAGO = ["Efectivo","Yape","Plin","Trans. BCP","Trans. Interbank","Trans. BBVA","POS Tarjeta"];
@@ -464,8 +378,8 @@ export default function MaderERP() {
   const [abonoModal, setAbonoModal] = useState(null);
   const [cotizPagoModal, setCotizPagoModal] = useState(null); // {pd, monto}
   const [modal,  setModal]  = useState(null);  const [toast,  setToast]  = useState(null);
-  const [numB,   setNumB]   = useState(26);
-  const [numF,   setNumF]   = useState(2);
+  const [numB,   setNumB]   = useState(1);
+  const [numF,   setNumF]   = useState(1);
 
   // POS
   const [posBusq,   setPosBusq]   = useState("");
@@ -511,6 +425,12 @@ export default function MaderERP() {
 
   // Cotizaciones
   const [cotizForm, setCotizForm] = useState(null);
+  // Etiquetas
+  const [etProd, setEtProd] = useState("");
+  const [etCol, setEtCol] = useState("");
+  const [etQty, setEtQty] = useState(1);
+  const [etPrecio, setEtPrecio] = useState(true);
+  const [etTamaño, setEtTamaño] = useState("small");
 
   // Compras
   const [compraForm, setCompraForm] = useState(null);
@@ -546,6 +466,28 @@ export default function MaderERP() {
 
   const scanRef = useRef(null);
   useEffect(() => { if (scanMode && scanRef.current) scanRef.current.focus(); }, [scanMode]);
+
+  // ─── PWA META TAGS (iPhone home screen) ─────────────────────────────────
+  useEffect(() => {
+    // apple-touch-icon
+    let link = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+    if (!link) { link = document.createElement("link") as HTMLLinkElement; link.rel = "apple-touch-icon"; document.head.appendChild(link); }
+    link.href = LOGO_MED;
+    // theme-color
+    let meta = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
+    if (!meta) { meta = document.createElement("meta") as HTMLMetaElement; meta.name = "theme-color"; document.head.appendChild(meta); }
+    meta.content = "#a0714f";
+    // apple PWA
+    const setMeta = (name:string, content:string) => {
+      let m = document.querySelector(`meta[name='${name}']`) as HTMLMetaElement;
+      if (!m) { m = document.createElement("meta") as HTMLMetaElement; m.name = name; document.head.appendChild(m); }
+      m.content = content;
+    };
+    setMeta("apple-mobile-web-app-capable", "yes");
+    setMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
+    setMeta("apple-mobile-web-app-title", "MoblaMel");
+    document.title = "MoblaMel ERP";
+  }, []);
 
   // ─── SUPABASE: CARGA INICIAL ──────────────────────────────────────────────
   const [dbReady, setDbReady] = useState(false);
@@ -1115,7 +1057,7 @@ export default function MaderERP() {
         </div>
       </div>
 
-      <div style={{ display:"flex", flex:1, overflow:"hidden", height:"calc(100vh - 52px)" }}>
+      <div style={{ display:"flex", flex:1, overflow:"hidden", height:"calc(100dvh - 52px)" }}>
 
         {/* SIDEBAR */}
         <div style={{ width: sidebarOpen ? 210 : (modActual === "pos" ? 0 : 56), background:`linear-gradient(180deg, #3d2b1a 0%, #5c3d22 100%)`, borderRight:"none", padding: sidebarOpen ? "16px 10px" : modActual === "pos" ? "0" : "16px 8px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative", visibility: !sidebarOpen && modActual === "pos" ? "hidden" : "visible" }}>
@@ -1137,7 +1079,7 @@ export default function MaderERP() {
               style={{ width:"100%", padding: sidebarOpen?"8px 12px":"8px 4px", borderRadius:8, border:"none", background: modActual === n.id ? "rgba(255,255,255,0.15)" : "transparent", color: modActual === n.id ? "#fff" : "rgba(255,255,255,0.55)", fontSize:12, fontWeight: modActual === n.id ? 700 : 400, cursor:"pointer", textAlign:sidebarOpen?"left":"center", fontFamily:"inherit", marginBottom:1, display:"flex", alignItems:"center", gap:sidebarOpen?8:0, justifyContent:sidebarOpen?"flex-start":"center", transition:"all 0.12s", overflow:"hidden", borderLeft: modActual === n.id ? `3px solid ${C.acL}` : "3px solid transparent" }}>
               <span style={{ fontSize:sidebarOpen?15:18, flexShrink:0 }}>{n.ico}</span>
               {sidebarOpen && <span style={{ whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{n.label}</span>}
-              {sidebarOpen && (n.id === "ia" || n.id === "prediccion") && <span style={{ marginLeft:"auto", fontSize:9, background: n.id === "ia" ? C.ac : C.bl, color:"#fff", padding:"1px 5px", borderRadius:99, fontWeight:700 }}>IA</span>}
+              {sidebarOpen && (n.id === "ia" || n.id === "prediccion" || n.id === "etiquetas") && <span style={{ marginLeft:"auto", fontSize:9, background: n.id === "ia" ? C.ac : n.id === "prediccion" ? C.bl : C.grL, color:"#fff", padding:"1px 5px", borderRadius:99, fontWeight:700 }}>{n.id === "etiquetas" ? "NEW" : "IA"}</span>}
             </button>
           ))}
           <div style={{ flex:1 }} />
@@ -1159,7 +1101,7 @@ export default function MaderERP() {
         )}
 
         {/* CONTENIDO */}
-        <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", padding:22, background:C.bg, minHeight:0 }}>
+        <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", padding:"16px", background:C.bg, minHeight:0 }}>
 
           {/* Banner de error de BD */}
           {dbError && (
@@ -1174,7 +1116,7 @@ export default function MaderERP() {
               <PageTitle title="🏠 Panel de Control" sub={`Bienvenido ${user.nombre} · ${new Date().toLocaleDateString("es-PE",{weekday:"long",day:"2-digit",month:"long"})}`} />
               {/* KPIs — admin ve todo, vendedor solo sus ventas */}
               {isAdmin ? (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10, marginBottom:16 }}>
                   <KPI icon="💰" label="Ingresos del mes"  value={fmtK(kpi.ing)}  color={C.grL}  trend={12} sub={`${kpi.tickets} ventas`} />
                   <KPI icon="📉" label="Gastos del mes"    value={fmtK(kpi.gm)}   color={C.rdL}  sub="Mat+taller+local" />
                   <KPI icon="✨" label="Utilidad neta"     value={fmtK(kpi.ut)}   color={C.ac}   trend={8}  sub={`Margen ${kpi.mg}%`} />
@@ -1369,7 +1311,7 @@ export default function MaderERP() {
 
               {/* ── FASE CATÁLOGO ── */}
               {posFase === "catalogo" && (
-                <div style={{display:"flex",height:"calc(100vh - 120px)",minHeight:500,borderRadius:14,overflow:"hidden",border:`1px solid ${C.border}`,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+                <div style={{display:"flex",height:"calc(100dvh - 120px)",minHeight:400,borderRadius:14,overflow:"hidden",border:`1px solid ${C.border}`,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
 
                   {/* Categorías verticales */}
                   <div className="pos-cats" style={{width:80,background:"#1e2a3a",display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 0",gap:4,flexShrink:0,overflowY:"auto"}}>
@@ -1684,7 +1626,7 @@ export default function MaderERP() {
                 </div>
               } />
               {/* KPIs dinámicos del filtro */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8, marginBottom:10 }}>
                 <KPI icon="💰" label={hayFiltro?"Total filtrado":"Ingresos del mes"} value={fmt(hayFiltro?totalFilt:kpi.ing)} color={C.grL} sub={`${ventasFilt.length} ventas cerradas`}/>
                 {isAdmin
                   ? <KPI icon="🎫" label="Ticket promedio" value={fmt(ventasFilt.length ? totalFilt/ventasFilt.length : 0)} color={C.ac}/>
@@ -3481,6 +3423,242 @@ export default function MaderERP() {
               </div>
             </>
           )}
+
+
+          {/* ═══════ ETIQUETAS ═══════ */}
+          {modActual === "etiquetas" && (() => {
+            // Estado en componente padre (evita violación de hooks en IIFE)
+            const prodSel = prods.find(p => p.id === etProd);
+
+            const TAMAÑOS = {
+              small:  { w:62, h:38, fontSize:6,  barcodeH:16, cols:3, rows:7, label:"Pequeña (6×3.8cm) · 21 por hoja" },
+              medium: { w:74, h:52, fontSize:7,  barcodeH:22, cols:2, rows:5, label:"Mediana (7.4×5.2cm) · 10 por hoja" },
+              large:  { w:105,h:74, fontSize:9,  barcodeH:30, cols:1, rows:4, label:"Grande (10.5×7.4cm) · 4 por hoja" },
+            };
+            const tam = TAMAÑOS[etTamaño];
+
+            const colsDisp = prodSel?.cols || [];
+            const codeVal = prodSel ? (etCol ? `${prodSel.id}-${etCol.slice(0,3).toUpperCase()}` : prodSel.id) : "MOBLAMEL";
+
+            // Generar barras del código de barras (Code 128 simplificado visual)
+            const genBars = (code) => {
+              let bars = "";
+              let x = 8;
+              const h = tam.barcodeH - 4;
+              // Patrón visual pseudoaleatorio pero determinista basado en chars
+              for (let i = 0; i < code.length; i++) {
+                const charCode = code.charCodeAt(i);
+                const widths = [1,2,1,2,3,1,2,1,3,2,1,2,1,2,3];
+                for (let j = 0; j < 3; j++) {
+                  const w2 = widths[(charCode + j * 7) % widths.length];
+                  if ((charCode + j) % 2 === 0) {
+                    bars += `<rect x="${x}" y="4" width="${w2}" height="${h}" fill="#1a1a1a"/>`;
+                  }
+                  x += w2 + 1;
+                }
+              }
+              // Start/stop bars
+              bars = `<rect x="4" y="4" width="2" height="${h}" fill="#1a1a1a"/><rect x="6" y="4" width="1" height="${h}" fill="#1a1a1a"/>` + bars + `<rect x="${x+2}" y="4" width="2" height="${h}" fill="#1a1a1a"/>`;
+              return bars;
+            };
+
+            const renderEtiqueta = (idx) => {
+              const w = tam.w;
+              const h = tam.h;
+              const fs = tam.fontSize;
+              const bh = tam.barcodeH;
+              const nombreCorto = prodSel ? prodSel.n.substring(0, 22) : "Producto";
+              const colLabel = etCol || (prodSel?.cols[0] || "");
+              const precio = prodSel ? `S/ ${prodSel.p.toFixed(2)}` : "S/ 0.00";
+
+              return `
+<svg width="${w}mm" height="${h}mm" viewBox="0 0 ${w*3.78} ${h*3.78}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+  <!-- Fondo -->
+  <rect width="${w*3.78}" height="${h*3.78}" fill="white" stroke="#ddd" stroke-width="0.5"/>
+  <!-- Franja superior café -->
+  <rect width="${w*3.78}" height="14" fill="#a0714f"/>
+  <!-- Logo texto -->
+  <text x="8" y="10" font-family="Georgia,serif" font-size="8" font-weight="bold" fill="white" letter-spacing="1">MOBLAMEL</text>
+  <!-- Color dot -->
+  <circle cx="${w*3.78-12}" cy="7" r="4" fill="${HEX_COLOR[colLabel]||"#888"}" stroke="white" stroke-width="0.5"/>
+  <!-- Nombre producto -->
+  <text x="${w*3.78/2}" y="26" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="#2c2016" text-anchor="middle">${nombreCorto}</text>
+  <!-- Color -->
+  <text x="${w*3.78/2}" y="34" font-family="Arial,sans-serif" font-size="${fs}" fill="#8a7560" text-anchor="middle">${colLabel}</text>
+  <!-- Código de barras -->
+  <svg x="8" y="36" width="${w*3.78-16}" height="${bh}">
+    ${genBars(codeVal)}
+  </svg>
+  <!-- Código texto -->
+  <text x="${w*3.78/2}" y="${36+bh+6}" font-family="Courier New,monospace" font-size="${fs-1}" fill="#5c4a38" text-anchor="middle">${codeVal}</text>
+  ${etPrecio ? `<rect x="${w*3.78-38}" y="${h*3.78-16}" width="34" height="12" rx="4" fill="#a0714f"/>
+  <text x="${w*3.78-21}" y="${h*3.78-7}" font-family="Arial,sans-serif" font-size="${fs+1}" font-weight="bold" fill="white" text-anchor="middle">${precio}</text>` : ""}
+</svg>`;
+            };
+
+            const imprimirEtiquetas = () => {
+              if (!prodSel) { alert("Selecciona un producto"); return; }
+              const etiquetas = Array.from({length: etQty}, (_, i) => renderEtiqueta(i)).join("\n");
+              const ventana = window.open("", "_blank");
+              if (!ventana) return;
+              ventana.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Etiquetas MoblaMel</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#fff; font-family:Arial,sans-serif; }
+  .grid { display:flex; flex-wrap:wrap; gap:3mm; padding:10mm; justify-content:flex-start; }
+  .etq { page-break-inside:avoid; }
+  @media print {
+    @page { margin:8mm; size:A4; }
+    body { margin:0; }
+    .no-print { display:none; }
+  }
+</style></head>
+<body>
+<div class="no-print" style="padding:16px;background:#f4f6f9;display:flex;gap:12px;align-items:center;border-bottom:1px solid #e2e6ed">
+  <strong>🏷️ ${etQty} etiqueta(s) de ${prodSel.n}${etCol?" · "+etCol:""}</strong>
+  <button onclick="window.print()" style="padding:8px 16px;background:#a0714f;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold">🖨️ Imprimir</button>
+  <button onclick="window.close()" style="padding:8px 16px;background:#fff;border:1px solid #ccc;border-radius:6px;cursor:pointer">Cerrar</button>
+</div>
+<div class="grid">
+  ${Array.from({length: etQty}, (_, i) => `<div class="etq">${renderEtiqueta(i)}</div>`).join("\n")}
+</div>
+<script>setTimeout(()=>{window.print();},400);<\/script>
+</body></html>`);
+              ventana.document.close();
+            };
+
+            return (<>
+              <PageTitle title="🏷️ Etiquetas" sub="Genera e imprime etiquetas con código de barras en hoja A4"/>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:20 }}>
+
+                {/* Panel izquierdo: configuración */}
+                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+                  {/* Selección de producto */}
+                  <Card style={{ padding:18 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:14, textTransform:"uppercase", letterSpacing:"0.5px" }}>📦 Producto</div>
+                    <div style={{ marginBottom:12 }}>
+                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.4px" }}>Buscar producto</label>
+                      <select value={etProd} onChange={e => { setEtProd(e.target.value); setEtCol(""); }}
+                        style={{ width:"100%", background:C.white, border:`2px solid ${etProd?C.ac:C.border}`, borderRadius:8, padding:"9px 12px", fontSize:13, outline:"none", fontFamily:"inherit", cursor:"pointer", color:C.t1, boxSizing:"border-box" }}>
+                        <option value="">— Seleccionar producto —</option>
+                        {prods.map(p => <option key={p.id} value={p.id}>{p.ico} {p.n} · {p.id}</option>)}
+                      </select>
+                    </div>
+                    {prodSel && (
+                      <div style={{ marginBottom:12 }}>
+                        <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.4px" }}>Color (opcional)</label>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          <button onClick={() => setEtCol("")}
+                            style={{ padding:"6px 12px", borderRadius:99, border:`2px solid ${etCol===""?C.ac:C.border}`, background:etCol===""?C.acBg:"transparent", color:etCol===""?C.ac:C.t3, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                            Todos los colores
+                          </button>
+                          {prodSel.cols.map(col => (
+                            <button key={col} onClick={() => setEtCol(col)}
+                              style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:99, border:`2px solid ${etCol===col?C.ac:C.border}`, background:etCol===col?C.acBg:"transparent", color:etCol===col?C.ac:C.t2, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                              <div style={{ width:10, height:10, borderRadius:"50%", background:HEX_COLOR[col]||"#888" }}/>
+                              {col}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+
+                  {/* Cantidad y opciones */}
+                  <Card style={{ padding:18 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:14, textTransform:"uppercase", letterSpacing:"0.5px" }}>⚙️ Opciones</div>
+                    <div style={{ marginBottom:16 }}>
+                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.4px" }}>Tamaño de etiqueta</label>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {Object.entries(TAMAÑOS).map(([k, t]) => (
+                          <button key={k} onClick={() => setEtTamaño(k)}
+                            style={{ padding:"10px 14px", borderRadius:8, border:`2px solid ${etTamaño===k?C.ac:C.border}`, background:etTamaño===k?C.acBg:"transparent", cursor:"pointer", textAlign:"left" }}>
+                            <div style={{ fontSize:12, fontWeight:700, color:etTamaño===k?C.ac:C.t2 }}>
+                              {k==="small"?"Pequeña":k==="medium"?"Mediana":"Grande"}
+                            </div>
+                            <div style={{ fontSize:10, color:C.t4, marginTop:2 }}>{t.label}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom:14 }}>
+                      <label style={{ fontSize:11, fontWeight:600, color:C.t3, display:"block", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.4px" }}>Cantidad de etiquetas</label>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <button onClick={() => setEtQty(q => Math.max(1, q-1))}
+                          style={{ width:38, height:38, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, fontSize:20, fontWeight:700, cursor:"pointer" }}>−</button>
+                        <input type="number" min="1" max="100" value={etQty} onChange={e => setEtQty(Math.max(1, Math.min(100, parseInt(e.target.value)||1)))}
+                          style={{ flex:1, textAlign:"center", fontSize:22, fontWeight:800, background:C.white, border:`2px solid ${C.ac}`, borderRadius:8, padding:"6px", outline:"none", color:C.t1, fontFamily:"inherit" }}/>
+                        <button onClick={() => setEtQty(q => Math.min(100, q+1))}
+                          style={{ width:38, height:38, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, fontSize:20, fontWeight:700, cursor:"pointer" }}>+</button>
+                      </div>
+                      <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
+                        {[1,2,5,10,20,50].map(n => (
+                          <button key={n} onClick={() => setEtQty(n)}
+                            style={{ padding:"4px 10px", borderRadius:99, border:`1px solid ${etQty===n?C.ac:C.border}`, background:etQty===n?C.acBg:"transparent", fontSize:11, fontWeight:700, cursor:"pointer", color:etQty===n?C.ac:C.t3 }}>
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:C.bg, borderRadius:8 }}>
+                      <button onClick={() => setEtPrecio(p => !p)}
+                        style={{ width:40, height:22, borderRadius:11, border:"none", background:etPrecio?C.grL:C.t4, cursor:"pointer", position:"relative", transition:"all 0.2s", flexShrink:0 }}>
+                        <div style={{ position:"absolute", top:2, left:etPrecio?20:2, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"all 0.2s" }}/>
+                      </button>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>Mostrar precio</div>
+                        <div style={{ fontSize:10, color:C.t4 }}>Incluye el precio de venta en la etiqueta</div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Botón imprimir */}
+                  <button onClick={imprimirEtiquetas} disabled={!prodSel}
+                    style={{ padding:"16px", borderRadius:12, border:"none", background:prodSel?"linear-gradient(135deg,#a0714f,#7d5538)":"#e2e6ed", color:prodSel?"#fff":"#a0aec0", fontSize:16, fontWeight:800, cursor:prodSel?"pointer":"not-allowed", fontFamily:"inherit", boxShadow:prodSel?"0 4px 16px rgba(100,60,20,0.3)":"none", letterSpacing:"0.3px" }}>
+                    🖨️ Generar e Imprimir {etQty} Etiqueta{etQty!==1?"s":""}
+                  </button>
+
+                  {!prodSel && (
+                    <div style={{ textAlign:"center", fontSize:12, color:C.t4, fontStyle:"italic" }}>
+                      Selecciona un producto para generar etiquetas
+                    </div>
+                  )}
+                </div>
+
+                {/* Panel derecho: previsualización */}
+                <div>
+                  <Card style={{ padding:18, position:"sticky", top:16 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t3, marginBottom:14, textTransform:"uppercase", letterSpacing:"0.5px" }}>👁️ Previsualización</div>
+                    {prodSel ? (
+                      <>
+                        <div style={{ background:"#f4f6f9", borderRadius:10, padding:16, display:"flex", justifyContent:"center", alignItems:"center", minHeight:200, marginBottom:12 }}
+                          dangerouslySetInnerHTML={{ __html: renderEtiqueta(0) }}/>
+                        <div style={{ fontSize:11, color:C.t4, textAlign:"center", marginBottom:12 }}>
+                          Vista previa 1:{etTamaño==="small"?"1":etTamaño==="medium"?"0.8":"0.6"} — La impresión es más precisa
+                        </div>
+                        <div style={{ background:C.acBg, borderRadius:8, padding:"10px 12px", fontSize:11, color:C.t2 }}>
+                          <div style={{ fontWeight:700, color:C.ac, marginBottom:4 }}>📋 Resumen</div>
+                          <div>Producto: <strong>{prodSel.n}</strong></div>
+                          {etCol && <div>Color: <strong>{etCol}</strong></div>}
+                          <div>Cantidad: <strong>{etQty} etiqueta{etQty!==1?"s":""}</strong></div>
+                          <div>Tamaño: <strong>{TAMAÑOS[etTamaño].label.split("·")[0].trim()}</strong></div>
+                          <div>Precio: <strong>{etPrecio?"Incluido":"Oculto"}</strong></div>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ textAlign:"center", padding:"60px 20px", color:C.t4 }}>
+                        <div style={{ fontSize:48, marginBottom:12 }}>🏷️</div>
+                        <div style={{ fontSize:13 }}>Selecciona un producto para ver la previsualización</div>
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              </div>
+            </>);
+          })()}
 
           {/* ═══════ VENDEDORES ═══════ */}
           {modActual === "vendedores" && (() => {
