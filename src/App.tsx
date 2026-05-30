@@ -342,7 +342,7 @@ function Modal({ children, onClose, wide }) {
   return (
     <div onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:16 }}>
-      <div style={{ background:C.white, borderRadius:14, padding:24, width: wide ? 620 : 520, maxWidth:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+      <div style={{ background:C.white, borderRadius:14, padding:24, width: wide ? 620 : 520, maxWidth:"100%", maxHeight:"90dvh", overflowY:"auto", WebkitOverflowScrolling:"touch", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
         {children}
       </div>
     </div>
@@ -486,6 +486,12 @@ export default function MaderERP() {
     setMeta("apple-mobile-web-app-capable", "yes");
     setMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
     setMeta("apple-mobile-web-app-title", "MoblaMel");
+    // viewport-fit=cover — necesario para safe-area-inset en iPhone X+
+    let vp = document.querySelector("meta[name='viewport']") as HTMLMetaElement;
+    if (!vp) { vp = document.createElement("meta") as HTMLMetaElement; vp.name = "viewport"; document.head.appendChild(vp); }
+    if (!vp.content.includes("viewport-fit")) {
+      vp.content = (vp.content || "width=device-width,initial-scale=1") + ",viewport-fit=cover";
+    }
     document.title = "MoblaMel ERP";
   }, []);
 
@@ -1002,7 +1008,15 @@ export default function MaderERP() {
 
   // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight:"100vh", background:C.bg, color:C.t1, fontFamily:"'Segoe UI','Helvetica Neue',sans-serif", fontSize:14, display:"flex", flexDirection:"column" }}>
+    <div style={{ height:"100dvh", background:C.bg, color:C.t1, fontFamily:"'Segoe UI','Helvetica Neue',sans-serif", fontSize:14, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <style>{`
+        *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
+        body{overscroll-behavior:none;}
+        .scroll-touch{-webkit-overflow-scrolling:touch;overflow-y:auto;}
+        @supports(padding:max(0px)){
+          .safe-bottom{padding-bottom:max(0px,env(safe-area-inset-bottom));}
+        }
+      `}</style>
 
       {/* TOPBAR */}
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, height:54, display:"flex", alignItems:"center", padding:"0 20px", gap:16, flexShrink:0, boxShadow:"0 1px 8px rgba(100,60,20,0.08)", position:"sticky", top:0, zIndex:50 }}>
@@ -1057,10 +1071,10 @@ export default function MaderERP() {
         </div>
       </div>
 
-      <div style={{ display:"flex", flex:1, overflow:"hidden", height:"calc(100dvh - 52px)" }}>
+      <div style={{ display:"flex", flex:1, overflow:"hidden", minHeight:0 }}>
 
         {/* SIDEBAR */}
-        <div style={{ width: sidebarOpen ? 210 : (modActual === "pos" ? 0 : 56), background:`linear-gradient(180deg, #3d2b1a 0%, #5c3d22 100%)`, borderRight:"none", padding: sidebarOpen ? "16px 10px" : modActual === "pos" ? "0" : "16px 8px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative", visibility: !sidebarOpen && modActual === "pos" ? "hidden" : "visible" }}>
+        <div className="scroll-touch" style={{ width: sidebarOpen ? 210 : (modActual === "pos" ? 0 : 56), background:`linear-gradient(180deg, #3d2b1a 0%, #5c3d22 100%)`, borderRight:"none", padding: sidebarOpen ? "16px 10px" : modActual === "pos" ? "0" : "16px 8px", flexShrink:0, overflowY:"auto", overflowX:"hidden", display:"flex", flexDirection:"column", transition:"width 0.2s ease", position:"relative", visibility: !sidebarOpen && modActual === "pos" ? "hidden" : "visible" }}>
           {/* Toggle collapse button */}
           <button onClick={() => setSidebarOpen(o => !o)}
             style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"100%", padding:"7px 4px", marginBottom:12, borderRadius:8, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(255,255,255,0.08)", cursor:"pointer", color:"rgba(255,255,255,0.7)", fontSize:14, flexShrink:0 }}
@@ -1101,7 +1115,7 @@ export default function MaderERP() {
         )}
 
         {/* CONTENIDO */}
-        <div style={{ flex:1, overflowY:"auto", overflowX:"hidden", padding:"16px", background:C.bg, minHeight:0 }}>
+        <div className="scroll-touch safe-bottom" style={{ flex:1, overflowY:"auto", overflowX:"hidden", padding:"16px", background:C.bg, minHeight:0 }}>
 
           {/* Banner de error de BD */}
           {dbError && (
