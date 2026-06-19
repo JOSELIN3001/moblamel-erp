@@ -1,4 +1,4 @@
-// MoblaMel ERP v52 - Logo PWA original, ícono etiquetas en sidebar
+// MoblaMel ERP v53 - Logo limpio definitivo, safe area topbar iPhone
 // PWA: Para activar el ícono en iPhone, agregar en public/index.html:
 // <link rel="apple-touch-icon" href="/logo192.png">
 // <meta name="apple-mobile-web-app-capable" content="yes">
@@ -946,7 +946,7 @@ export default function MaderERP() {
 
   if (!dbReady) return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${C.bg} 0%,${C.bg2} 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"'Segoe UI',sans-serif", gap:16 }}>
-      <img src="/logo.png" alt="MoblaMel" style={{ width:72, height:72, objectFit:"contain", borderRadius:16 }}/>
+      <img src={LOGO_MED} alt="MoblaMel" style={{ width:72, height:72, objectFit:"contain", borderRadius:16 }}/>
       <div style={{ fontSize:18, fontWeight:700, color:C.t1 }}>MoblaMel ERP</div>
       <div style={{ display:"flex", gap:6 }}>
         {[0,1,2].map(i => (
@@ -967,7 +967,7 @@ export default function MaderERP() {
         <div style={{ position:"absolute", width:400, height:400, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.08)", top:-100, left:-100 }}/>
         <div style={{ position:"absolute", width:300, height:300, borderRadius:"50%", border:"1px solid rgba(255,255,255,0.06)", bottom:-80, right:-80 }}/>
         {/* Logo SIN filtro — muestra los colores originales */}
-        <img src="/logo.png" alt="MoblaMel" style={{ width:120, height:120, objectFit:"contain", marginBottom:24 }}/>
+        <img src={LOGO_MED} alt="MoblaMel" style={{ width:120, height:120, objectFit:"contain", marginBottom:24 }}/>
         
         <div style={{ fontSize:15, color:"rgba(255,255,255,0.70)", textAlign:"center", lineHeight:1.6, maxWidth:260 }}>Sistema de gestión para mueblería de melamina</div>
         <div style={{ marginTop:36, display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center" }}>
@@ -981,7 +981,7 @@ export default function MaderERP() {
         <div style={{ width:"100%", maxWidth:340 }}>
           <div style={{ textAlign:"center", marginBottom:32 }}>
             {/* Logo en móvil */}
-            <img src="/logo.png" alt="MoblaMel" style={{ width:80, height:80, objectFit:"contain", display:"block", margin:"0 auto 10px" }}/>
+            <img src={LOGO_MED} alt="MoblaMel" style={{ width:80, height:80, objectFit:"contain", display:"block", margin:"0 auto 10px" }}/>
             <div style={{ fontSize:24, fontWeight:800, color:C.t1, marginBottom:4 }}>Bienvenido</div>
             <div style={{ fontSize:13, color:C.t3 }}>Ingresa tus credenciales para continuar</div>
           </div>
@@ -1025,7 +1025,7 @@ export default function MaderERP() {
       <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", padding:"0 20px", gap:16, flexShrink:0, boxShadow:"0 1px 8px rgba(100,60,20,0.08)", position:"sticky", top:0, zIndex:50, paddingTop:"max(12px, env(safe-area-inset-top))", paddingBottom:12, minHeight:54 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <div style={{ width:32, height:32, borderRadius:8, overflow:"hidden", background:"#f9f6f0", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <img src="/logo.png" alt="M" style={{ width:30, height:30, objectFit:"contain" }}/>
+            <img src={LOGO_MED} alt="M" style={{ width:30, height:30, objectFit:"contain" }}/>
           </div>
           <span style={{ fontSize:15, fontWeight:800, color:C.ac }}>MoblaMel</span>
         </div>
@@ -4310,7 +4310,7 @@ export default function MaderERP() {
             </div>
             <div id="voucher-print" style={{ background:"#fff", color:"#111", padding:"18px 16px", fontFamily:"'Courier New',monospace", fontSize:12 }}>
               <div style={{ textAlign:"center", marginBottom:6 }}>
-                <img src="/logo.png" alt="MoblaMel" style={{ width:56, height:56, objectFit:"contain" }}/>
+                <img src={LOGO_MED} alt="MoblaMel" style={{ width:56, height:56, objectFit:"contain" }}/>
               </div>
               <div style={{ textAlign:"center", fontWeight:700, fontSize:13, marginBottom:2 }}>MOBLAMEL</div>
               <div style={{ textAlign:"center", fontSize:10, color:"#555", marginBottom:8 }}>RUC: 10402654703 · Villa El Salvador, Lima</div>
