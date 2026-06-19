@@ -1,4 +1,4 @@
-// MoblaMel ERP v53 - Logo limpio definitivo, safe area topbar iPhone
+// MoblaMel ERP v55 - Usuario recordado, contraseña nunca autocompletada
 // PWA: Para activar el ícono en iPhone, agregar en public/index.html:
 // <link rel="apple-touch-icon" href="/logo192.png">
 // <meta name="apple-mobile-web-app-capable" content="yes">
@@ -988,16 +988,16 @@ export default function MaderERP() {
           <div style={{ marginBottom:16 }}>
             <label style={{ fontSize:11, fontWeight:700, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.5px" }}>USUARIO</label>
             <input value={lU} onChange={e => setLU(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
-              placeholder="Tu nombre de usuario"
+              placeholder="Tu nombre de usuario" autoComplete="username" name="username"
               style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1 }}
               onFocus={e => e.target.style.borderColor=C.ac} onBlur={e => e.target.style.borderColor=C.border}/>
           </div>
           <div style={{ marginBottom:8 }}>
             <label style={{ fontSize:11, fontWeight:700, color:C.t2, display:"block", marginBottom:6, letterSpacing:"0.5px" }}>CONTRASEÑA</label>
             <input type="password" value={lP} onChange={e => setLP(e.target.value)} onKeyDown={e => e.key === "Enter" && login()}
-              placeholder="••••••••"
+              placeholder="••••••••" autoComplete="new-password" name="moblamel-pass-no-save" readOnly onFocus={e => { e.target.removeAttribute("readonly"); e.target.style.borderColor=C.ac; }}
               style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:14, outline:"none", boxSizing:"border-box", fontFamily:"inherit", color:C.t1 }}
-              onFocus={e => e.target.style.borderColor=C.ac} onBlur={e => e.target.style.borderColor=C.border}/>
+              onBlur={e => e.target.style.borderColor=C.border}/>
           </div>
           {lErr && <div style={{ color:C.rd, fontSize:12, marginBottom:12, padding:"8px 12px", background:C.rdBg, borderRadius:8 }}>⚠️ {lErr}</div>}
           <button onClick={login} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:`linear-gradient(135deg, ${C.ac}, ${C.acD})`, color:"#fff", fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginTop:16, boxShadow:"0 4px 14px rgba(100,60,20,0.25)", letterSpacing:"0.3px" }}>
@@ -3268,13 +3268,11 @@ export default function MaderERP() {
             const limpiarDatosPrueba = async () => {
               if (!window.confirm("⚠️ ¿Limpiar TODOS los datos de prueba?\n\nEsto borrará permanentemente:\n• Todas las ventas\n• Todos los gastos\n• Todo el kardex\n• Todos los clientes\n• Todas las cotizaciones\n• Todos los pedidos\n• Todas las compras\n\nLos productos e inventario NO se borran.\n\nEsta acción no se puede deshacer.")) return;
               showToast("Limpiando datos...", "ok");
-              // Borrar de Supabase
               const tablas = ["ventas","gastos","kardex","clientes","cotizaciones","compras","pedidos","cierres","traslados"];
               await Promise.all(tablas.map(async (tabla) => {
                 const { error } = await (sb as any).from(tabla).delete().neq("id","__never__");
                 if (error) console.error(`Error limpiando ${tabla}:`, error);
               }));
-              // Limpiar estado local
               setVentas([]);
               setGastos([]);
               setKardex([]);
@@ -3287,13 +3285,26 @@ export default function MaderERP() {
               showToast("✓ Datos de prueba eliminados correctamente");
             };
 
+            const limpiarProductosPrueba = async () => {
+              if (!window.confirm("⚠️ ¿Borrar TODOS los productos del inventario?\n\nEsto eliminará permanentemente todos los muebles registrados (roperos, zapateros, cómodas, etc.) para que puedas empezar a cargar tus productos reales.\n\nEsta acción no se puede deshacer.\n\n¿Continuar?")) return;
+              showToast("Borrando productos...", "ok");
+              const { error } = await (sb as any).from("productos").delete().neq("id","__never__");
+              if (error) { console.error("Error borrando productos:", error); showToast("Error al borrar productos", "error"); return; }
+              setProds([]);
+              showToast("✓ Productos eliminados — listo para cargar tu inventario real");
+            };
+
             return (<>
               <PageTitle title="👤 Usuarios" sub={`${usuarios.length} usuarios · ${usuarios.filter(u=>u.activo).length} activos`}
                 action={
-                  <div style={{ display:"flex", gap:8 }}>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                     <button onClick={limpiarDatosPrueba}
                       style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${C.rdL}`, background:C.rdBg, color:C.rd, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                       🗑️ Limpiar datos prueba
+                    </button>
+                    <button onClick={limpiarProductosPrueba}
+                      style={{ padding:"7px 14px", borderRadius:8, border:`1px solid ${C.rdL}`, background:C.rdBg, color:C.rd, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      📦 Borrar productos de prueba
                     </button>
                     <Btn variant="primary" onClick={() => setModal({ tipo:"nuevoUser", form:{ nombre:"", pass:"", rol:"vendedor", ico:"👧", modulos:modulosPorRol("vendedor") } })}>+ Nuevo Usuario</Btn>
                   </div>
