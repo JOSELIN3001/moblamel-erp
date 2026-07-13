@@ -393,6 +393,7 @@ export default function MaderERP() {
   const [posDesc,   setPosDesc]   = useState("");
   const [scanMode,  setScanMode]  = useState(false);
   const [scanVal,   setScanVal]   = useState("");
+  const [posCamScan, setPosCamScan] = useState(false);
   const [voucher,   setVoucher]   = useState(null);
   const [voucherFmt, setVoucherFmt] = useState("ticket");
   const [posTab,    setPosTab]    = useState("catalogo"); // "catalogo" | "cobro"
@@ -1361,14 +1362,27 @@ export default function MaderERP() {
                         );})}
                       </div>
                     </div>
-                    {scanMode&&(
-                      <div style={{padding:"8px 12px",background:C.acBg,borderBottom:`1px solid ${C.border}`,display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                        <span style={{fontSize:11,fontWeight:700,color:C.ac}}>📷 ESCÁNER</span>
-                        <input ref={scanRef} autoFocus value={scanVal} onChange={e=>setScanVal(e.target.value)}
-                          onKeyDown={e=>{if(e.key==="Enter"&&scanVal){const p=prods.find(x=>x.id===scanVal.toUpperCase()||x.barcode===scanVal);if(p){posAgregar(p,p.cols[0]);setScanVal("");setScanMode(false);showToast(`✓ ${p.n}`);}else showToast("Código no encontrado","err");setScanVal("");}}}
-                          style={{flex:1,background:C.white,border:`2px solid ${C.ac}`,borderRadius:8,padding:"6px 12px",fontSize:13,outline:"none",fontFamily:"monospace",color:C.t1}}
-                          placeholder="Escanea o escribe → Enter"/>
-                        <button onClick={()=>setScanMode(false)} style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:C.white,cursor:"pointer",fontSize:12}}>✕</button>
+                   {scanMode&&(
+                      <div style={{padding:"8px 12px",background:C.acBg,borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <span style={{fontSize:11,fontWeight:700,color:C.ac}}>📷 ESCÁNER</span>
+                          <input ref={scanRef} autoFocus value={scanVal} onChange={e=>setScanVal(e.target.value)}
+                            onKeyDown={e=>{if(e.key==="Enter"&&scanVal){const p=prods.find(x=>x.id===scanVal.toUpperCase()||x.barcode===scanVal);if(p){posAgregar(p,p.cols[0]);setScanVal("");setScanMode(false);showToast(`✓ ${p.n}`);}else showToast("Código no encontrado","err");setScanVal("");}}}
+                            style={{flex:1,background:C.white,border:`2px solid ${C.ac}`,borderRadius:8,padding:"6px 12px",fontSize:13,outline:"none",fontFamily:"monospace",color:C.t1}}
+                            placeholder="Escanea o escribe → Enter"/>
+                          <button onClick={()=>{setScanMode(false);setPosCamScan(false);}} style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${C.border}`,background:C.white,cursor:"pointer",fontSize:12}}>✕</button>
+                        </div>
+                        <button onClick={()=>setPosCamScan(c=>!c)}
+                          style={{marginTop:8,width:"100%",padding:"8px",borderRadius:8,border:`1px solid ${posCamScan?C.ac:C.border}`,background:posCamScan?C.acBg:C.white,color:posCamScan?C.ac:C.t2,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          {posCamScan ? "⏹ Cerrar cámara" : "📱 Usar cámara del teléfono"}
+                        </button>
+                        {posCamScan && (
+                          <BarcodeCamera onDetect={code => {
+                            const p=prods.find(x=>x.id===code.toUpperCase()||x.barcode===code);
+                            if(p){posAgregar(p,p.cols[0]);showToast(`✓ ${p.n}`);}else showToast("Código no encontrado","err");
+                            setScanMode(false);setPosCamScan(false);setScanVal("");
+                          }} onClose={() => setPosCamScan(false)}/>
+                        )}
                       </div>
                     )}
 
