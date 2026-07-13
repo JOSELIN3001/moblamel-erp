@@ -4845,7 +4845,7 @@ function BarcodeCamera({ onDetect, onClose }) {
           setHint("Cargando librería de escaneo...");
           await new Promise((res, rej) => {
             const s = document.createElement("script");
-            s.src = "https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/umd/index.min.js";
+            s.src = "https://unpkg.com/@zxing/browser@0.0.10";
             s.onload = res; s.onerror = rej;
             document.head.appendChild(s);
           });
