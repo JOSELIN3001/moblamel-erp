@@ -4859,8 +4859,16 @@ function BarcodeCamera({ onDetect, onClose }) {
         if (videoRef.current) videoRef.current.srcObject = stream;
         setHint("Apunta el código de barras hacia la cámara");
 
-        // Intentar con BarcodeDetector nativo primero (Android/Chrome)
-        if ("BarcodeDetector" in window) {
+     // Usar zxing-js primero (más confiable en todos los navegadores, incluido PC)
+        if (window.ZXingBrowser) {
+          const reader = new window.ZXingBrowser.BrowserMultiFormatReader();
+          readerRef.current = reader;
+          reader.decodeFromVideoElement(videoRef.current, (result, err) => {
+            if (!active) return;
+            if (result) { stop(); onDetect(result.getText()); }
+          });
+        } else if ("BarcodeDetector" in window) {
+          // Respaldo: función nativa del navegador (solo si zxing no cargó)
           const det = new window.BarcodeDetector({ formats:["ean_13","ean_8","code_128","code_39","qr_code","upc_a"] });
           const scan = async () => {
             if (!active) return;
@@ -4873,17 +4881,6 @@ function BarcodeCamera({ onDetect, onClose }) {
             requestAnimationFrame(scan);
           };
           requestAnimationFrame(scan);
-          return;
-        }
-
-        // Fallback: zxing-js (iPhone Safari + todos los demás)
-        if (window.ZXingBrowser) {
-          const reader = new window.ZXingBrowser.BrowserMultiFormatReader();
-          readerRef.current = reader;
-          reader.decodeFromVideoElement(videoRef.current, (result, err) => {
-            if (!active) return;
-            if (result) { stop(); onDetect(result.getText()); }
-          });
         }
       } catch(e) {
         if (e.name === "NotAllowedError") setErr("Permiso de cámara denegado. Ve a Ajustes → Safari → Cámara y actívalo.");
