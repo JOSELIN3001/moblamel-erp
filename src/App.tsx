@@ -309,7 +309,7 @@ function KPI({ icon, label, value, sub, color = C.ac, trend }) {
 
 function PageTitle({ title, sub, action }) {
   return (
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+   <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:20 }}>
       <div>
         <h1 style={{ fontSize:20, fontWeight:700, color:C.t1, margin:0 }}>{title}</h1>
         {sub && <p style={{ fontSize:13, color:C.t3, margin:"3px 0 0" }}>{sub}</p>}
@@ -1915,7 +1915,7 @@ export default function MaderERP() {
             return (<>
               <PageTitle title="📦 Inventario" sub={`${invFiltrado.length} de ${prods.length} productos`}
                 action={
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                     <div style={{ display:"flex", background:C.bg2, borderRadius:8, padding:2, gap:2 }}>
                       {[["tabla","☰"],["cards","⊞"]].map(([v,ico]) => (
                         <button key={v} onClick={() => setInvVista(v)}
